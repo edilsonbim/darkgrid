@@ -3,10 +3,11 @@
 const { EventEmitter } = require('node:events');
 
 class GameViewManager extends EventEmitter {
-  constructor({ window, WebContentsView, gameOrigin, maxAccounts = 4, openExternal = () => {} }) {
+  constructor({ window, WebContentsView, session, gameOrigin, maxAccounts = 4, openExternal = () => {} }) {
     super();
     this.window = window;
     this.WebContentsView = WebContentsView;
+    this.session = session;
     this.gameOrigin = new URL(gameOrigin).origin;
     this.maxAccounts = maxAccounts;
     this.openExternal = openExternal;
@@ -18,6 +19,7 @@ class GameViewManager extends EventEmitter {
     if (!/^[a-zA-Z0-9_-]{1,64}$/.test(String(id)) || !Number.isInteger(slot) || slot < 0 || slot >= this.maxAccounts) return { ok: false, reason: 'invalid_account' };
     if (this.views.has(id)) return { ok: true, id, existing: true };
     const partition = `persist:darkgrid-account-${id}`;
+    try { this.session?.fromPartition(partition).setPermissionRequestHandler((_wc, _permission, callback) => callback(false)); } catch {}
     const view = new this.WebContentsView({ webPreferences: { partition, contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: true } });
     this.window.contentView.addChildView(view);
     view.setVisible(false);
@@ -65,6 +67,17 @@ class GameViewManager extends EventEmitter {
   }
 
   destroy() { for (const id of [...this.views.keys()]) this.remove(id); }
+
+  getSurface(id) {
+    const record = this.views.get(id);
+    if (!record) return null;
+    return {
+      getOrigin: () => { try { return new URL(record.view.webContents.getURL()).origin; } catch { return ''; } },
+      isDestroyed: () => record.view.webContents.isDestroyed(),
+      execute: (script) => record.view.webContents.executeJavaScript(script, true),
+      reload: () => record.view.webContents.reload()
+    };
+  }
 
   #applyBounds(record) {
     const count = Math.max(1, this.views.size);
