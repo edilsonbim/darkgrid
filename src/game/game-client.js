@@ -21,7 +21,7 @@ class GameClient extends GameAdapter {
   sellItems(input) { return super.sellItems(input); }
   sellPokemon(pokemon) { return super.sellPokemon(pokemon); }
   returnToLastHunt(input) { return super.returnToLastHunt(input); }
-  async recover() { throw Object.assign(new Error('Recuperação entra na fase de watchdog por conta'), { code: 'FEATURE_NOT_READY' }); }
+  async recover() { return this.reload(); }
 }
 
 module.exports = { GameClient };

@@ -9,13 +9,26 @@ const statusLabels = { loading: 'Carregando jogo', login_required: 'Login necess
 function render() {
   const grid = $('#accountsGrid');
   $('#activeCount').textContent = `${state.accounts.length}/4`;
+  const online = state.accounts.filter((account) => account.status === 'online' || account.status === 'stale').length;
+  const hunting = state.accounts.filter((account) => account.status === 'online' && account.hunt).length;
+  const metrics = state.accounts.reduce((total, account) => ({
+    kills: total.kills + Number(account.metrics?.kills || 0),
+    xph: total.xph + Number(account.metrics?.xph || 0),
+    captures: total.captures + Number(account.metrics?.captures || 0),
+    shiny: total.shiny + Number(account.metrics?.shiny || 0)
+  }), { kills: 0, xph: 0, captures: 0, shiny: 0 });
+  $('#activeSummary').textContent = online ? `${online} sessão(ões) conectada(s)` : 'nenhuma sessão conectada';
+  $('#farmStatus').textContent = hunting ? 'Operando' : online ? 'Aguardando' : 'Parado';
+  $('#farmSummary').textContent = hunting ? `${hunting} conta(s) em hunt` : 'conecte uma conta para começar';
+  $('#performanceValue').textContent = metrics.xph ? `${metrics.xph.toLocaleString('pt-BR')} XP/h` : 'Eco';
+  $('#performanceSummary').textContent = metrics.kills ? `${metrics.kills.toLocaleString('pt-BR')} kills · ${metrics.captures} capturas · ${metrics.shiny} shiny` : 'painel leve ativado';
   grid.replaceChildren(...state.accounts.map((account, index) => {
     const card = document.createElement('article'); card.className = 'account-card';
     const name = document.createElement('div'); name.className = 'account-name';
     const avatar = document.createElement('span'); avatar.className = 'account-avatar'; avatar.textContent = String(index + 1);
     const details = document.createElement('div'); const title = document.createElement('strong'); title.textContent = account.name || `Conta ${index + 1}`;
     const hunt = document.createElement('small'); hunt.textContent = account.hunt || 'Sessão não iniciada';
-    const stats = document.createElement('small'); stats.className = 'account-stats'; stats.textContent = account.level ? `Nível ${account.level} · ${account.gold || 0} gold` : 'Estado aguardando leitura';
+    const stats = document.createElement('small'); stats.className = 'account-stats'; stats.textContent = account.level ? `Nível ${account.level} · ${account.gold || 0} gold · ${Number(account.metrics?.kph || 0).toLocaleString('pt-BR')} kills/h · ${Number(account.metrics?.xph || 0).toLocaleString('pt-BR')} XP/h` : 'Estado aguardando leitura';
     details.append(title, hunt, stats); name.append(avatar, details);
     const actions = document.createElement('div'); actions.className = 'account-actions';
     const status = document.createElement('span'); status.className = 'account-status'; status.textContent = statusLabels[account.status] || account.status || 'Desconectada';
@@ -115,7 +128,7 @@ async function runAccountAction(account, action, input = {}) {
 }
 function applySnapshot(account, snapshot) {
   if (!snapshot) return;
-  account.status = snapshot.status; account.name = snapshot.name || account.name; account.hunt = snapshot.hunt?.name || snapshot.hunt?.slug || 'Sem hunt'; account.huntSlug = snapshot.hunt?.slug || account.huntSlug || ''; account.level = snapshot.level; account.gold = snapshot.gold;
+  account.status = snapshot.status; account.name = snapshot.name || account.name; account.hunt = snapshot.hunt?.name || snapshot.hunt?.slug || 'Sem hunt'; account.huntSlug = snapshot.hunt?.slug || account.huntSlug || ''; account.level = snapshot.level; account.gold = snapshot.gold; account.metrics = snapshot.metrics || account.metrics || {};
 }
 function syncLayout() { window.darkGridAPI.setAccountLayout({ x: 250, y: 112, width: Math.max(500, window.innerWidth - 270), height: Math.max(400, window.innerHeight - 135) }); }
 

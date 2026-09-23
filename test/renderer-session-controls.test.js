@@ -9,6 +9,7 @@ const app = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'app.j
 assert.match(html, /id="logoutButton"/);
 assert.match(html, /id="operationsModal"/);
 assert.match(html, /id="buyBallsForm"/);
+assert.match(html, /id="performanceValue"/);
 assert.match(app, /authLogout\(\)/);
 assert.match(app, /removeAccount\(account\.id\)/);
 assert.match(app, /accountAction\(account\.id, action/);
