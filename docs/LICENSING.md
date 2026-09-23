@@ -33,3 +33,5 @@ O cliente pode permanecer em `offline_grace` por no máximo 48 horas após a úl
 - Confiar somente em uma flag local `licensed=true`.
 - Guardar refresh token em `localStorage`.
 - Enviar senha, cookie ou token do jogo para a API DarkGrid.
+
+O repositório inclui `tools/dev-auth-server.js` apenas para testes locais do contrato HTTP. Ele usa memória e uma chave Ed25519 gerada a cada execução; não é um backend de produção, não persiste usuários e não deve ser exposto publicamente.

@@ -31,6 +31,14 @@ npm run dist
 
 Os artefatos são gravados em `release/` como instalador NSIS e versão portátil.
 
+Para testar o fluxo completo de login/licença localmente, existe um servidor efêmero somente de desenvolvimento:
+
+```powershell
+npm run auth:dev
+```
+
+Ele imprime a URL, a chave pública e as credenciais de demonstração. Os dados ficam apenas em memória; esse servidor não é backend de produção e não deve ser exposto na internet.
+
 ## Princípios
 
 - O PokeGrid atual permanece intacto e serve apenas como referência funcional.
