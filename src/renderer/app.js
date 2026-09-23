@@ -63,7 +63,7 @@ function setAuthStatus(status) {
   const label = $('#licenseLabel');
   $('#logoutButton').hidden = !status?.ok;
   if (!status?.ok) { label.textContent = status?.reason === 'auth_server_not_configured' ? 'Servidor não configurado' : 'Licença não verificada'; label.className = 'license-badge'; return; }
-  label.textContent = status.offlineGrace ? 'Licença offline · grace' : `Plano ${status.plan || 'ativo'}`;
+  label.textContent = status.offlineGrace ? 'Licença offline · grace' : status.offline ? 'Licença offline' : `Plano ${status.plan || 'ativo'}`;
   label.className = 'license-badge active';
 }
 

@@ -21,8 +21,15 @@ license.signature = crypto.sign(null, Buffer.from(licensePayload(license)), priv
   const result = await runtime.login('user@example.test', 'never-persisted');
   assert.equal(result.license.ok, true);
   assert.equal(result.license.plan, 'pro');
-  const restored = new AuthRuntime({ publicKey: publicPem, licenseStore: { async load() { return cached; } }, service: {} });
+const restored = new AuthRuntime({ publicKey: publicPem, licenseStore: { async load() { return cached; } }, service: {} });
+  const offline = await restored.getStatus();
+  assert.equal(offline.ok, true);
+  assert.equal(offline.offline, true);
   assert.equal((await restored.getStatus()).ok, true);
+  let revokedCleared = false;
+  const revoked = new AuthRuntime({ publicKey: publicPem, licenseStore: { async load() { return cached; }, async clear() { revokedCleared = true; } }, service: { async getLicense() { throw Object.assign(new Error('license_revoked'), { code: 'license_revoked' }); } } });
+  assert.equal((await revoked.getStatus()).ok, false);
+  assert.equal(revokedCleared, true);
   await runtime.logout();
   assert.equal(cleared, true);
   let invalidated = false;

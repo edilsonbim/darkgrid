@@ -53,10 +53,15 @@ class AuthRuntime extends EventEmitter {
     if (this.license) return this.license;
     const cached = await this.licenseStore?.load();
     if (!cached) return { ok: false, reason: 'auth_required' };
-    const result = verifyLicense(cached, this.publicKey, Date.now(), this.deviceId);
-    if (!result.ok) return { ok: false, reason: result.reason };
-    this.license = { ...result, licenseId: cached.licenseId, plan: cached.plan };
-    return this.license;
+    try { return await this.refreshLicense(); } catch (cause) {
+      const serverRejected = ['auth_required', 'license_revoked', 'license_not_found', 'license_inactive'].includes(String(cause?.code || cause?.message));
+      if (serverRejected) { this.license = { ok: false, reason: String(cause.code || cause.message) }; await this.licenseStore?.clear(); this.emit('license', this.license); return this.license; }
+      const result = verifyLicense(cached, this.publicKey, Date.now(), this.deviceId);
+      if (!result.ok) return { ok: false, reason: result.reason };
+      this.license = { ...result, offline: true, licenseId: cached.licenseId, plan: cached.plan };
+      this.emit('license', this.license);
+      return this.license;
+    }
   }
 }
 

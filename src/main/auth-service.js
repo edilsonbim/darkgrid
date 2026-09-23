@@ -75,7 +75,7 @@ class AuthService extends EventEmitter {
       throw cause;
     } finally { if (timer) clearTimeout(timer); }
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(String(data.code || data.message || `http_${response.status}`));
+    if (!response.ok) { const code = String(data.code || data.message || `http_${response.status}`); throw Object.assign(new Error(code), { code, status: response.status }); }
     return data;
   }
 }

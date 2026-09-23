@@ -27,6 +27,8 @@ No login, o cliente envia apenas um identificador de instalação não secreto (
 
 O cliente pode permanecer em `offline_grace` por no máximo 48 horas após a última licença válida. Nesse modo, contas já configuradas podem continuar, mas novas ativações e novos dispositivos ficam bloqueados. Ao fim do período, o app exige autenticação online sem apagar os dados locais.
 
+Na inicialização, o cliente tenta revalidar a licença com a API. Somente falhas de transporte permitem usar o cache assinado; respostas explícitas de revogação, expiração ou dispositivo inválido limpam a licença local.
+
 ## Nunca fazer
 
 - Colocar chave privada no executável.
