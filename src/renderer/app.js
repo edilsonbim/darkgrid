@@ -2,6 +2,7 @@
 
 const state = { accounts: [], busy: false, auth: { ok: false } };
 let gameLoginAccount = null;
+let operationsAccount = null;
 const $ = (selector) => document.querySelector(selector);
 const statusLabels = { loading: 'Carregando jogo', login_required: 'Login necessário', online: 'Online', stale: 'Sem atividade recente', offline: 'Offline', error: 'Erro no painel', opened: 'Painel aberto', closed: 'Painel oculto' };
 
@@ -20,9 +21,9 @@ function render() {
     const status = document.createElement('span'); status.className = 'account-status'; status.textContent = statusLabels[account.status] || account.status || 'Desconectada';
     const open = document.createElement('button'); open.className = 'mini-button'; open.textContent = 'Abrir'; open.addEventListener('click', () => openAccount(account));
     const actionBar = document.createElement('div'); actionBar.className = 'account-action-bar';
-    for (const [label, action] of [['Login', 'gameLogin'], ['Market', 'openMarket'], ['Depot', 'openDepot'], ['Retornar', 'returnToLastHunt'], ['Atualizar', 'refresh']]) {
+    for (const [label, action] of [['Login', 'gameLogin'], ['Market', 'openMarket'], ['Depot', 'openDepot'], ['Operações', 'operations'], ['Retornar', 'returnToLastHunt'], ['Atualizar', 'refresh']]) {
       const button = document.createElement('button'); button.className = 'mini-button'; button.textContent = label; button.disabled = Boolean(account.actionBusy);
-      button.addEventListener('click', () => action === 'refresh' ? refreshAccount(account) : action === 'gameLogin' ? openGameLogin(account) : runAccountAction(account, action, action === 'returnToLastHunt' ? { slug: account.huntSlug, name: account.hunt } : {})); actionBar.append(button);
+      button.addEventListener('click', () => action === 'refresh' ? refreshAccount(account) : action === 'gameLogin' ? openGameLogin(account) : action === 'operations' ? openOperations(account) : runAccountAction(account, action, action === 'returnToLastHunt' ? { slug: account.huntSlug, name: account.hunt } : {})); actionBar.append(button);
     }
     actions.append(status, open); card.append(name, actions, actionBar); return card;
   }));
@@ -41,6 +42,27 @@ function openAuthModal() { $('#authModal').hidden = false; $('#authEmail').focus
 function closeAuthModal() { $('#authModal').hidden = true; $('#authError').textContent = ''; }
 async function openGameLogin(account) { gameLoginAccount = account; await window.darkGridAPI.openAccount(account.id); syncLayout(); $('#gameLoginModal').hidden = false; $('#gameUsername').focus(); }
 function closeGameLogin() { gameLoginAccount = null; $('#gameLoginModal').hidden = true; $('#gameUsername').value = ''; $('#gamePassword').value = ''; $('#gameLoginError').textContent = ''; }
+function openOperations(account) { operationsAccount = account; $('#operationsAccountLabel').textContent = account.name || 'Conta selecionada'; $('#operationsError').textContent = ''; $('#operationsModal').hidden = false; $('#ballId').focus(); }
+function closeOperations() { operationsAccount = null; $('#operationsModal').hidden = true; $('#operationsError').textContent = ''; }
+async function submitOperation(event, action, inputFactory) {
+  event.preventDefault();
+  if (!operationsAccount || operationsAccount.actionBusy) return;
+  const account = operationsAccount;
+  const button = event.currentTarget.querySelector('button[type="submit"]');
+  button.disabled = true; $('#operationsError').textContent = '';
+  account.actionBusy = true; render();
+  try {
+    const response = await window.darkGridAPI.accountAction(account.id, action, inputFactory());
+    if (!response?.ok || !response.result?.ok) throw new Error(response?.reason || response?.result?.reason || 'operation_failed');
+    account.status = 'online';
+    closeOperations();
+  } catch (cause) {
+    $('#operationsError').textContent = `Operação não concluída: ${cause.message}`;
+  } finally {
+    account.actionBusy = false;
+    button.disabled = false; render();
+  }
+}
 
 async function addAccount() {
   if (!state.auth.ok) { openAuthModal(); return; }
@@ -126,6 +148,10 @@ $('#authForm').addEventListener('submit', async (event) => {
 });
 $('#gameLoginClose').addEventListener('click', closeGameLogin);
 $('#gameLoginModal').addEventListener('click', (event) => { if (event.target.id === 'gameLoginModal') closeGameLogin(); });
+$('#operationsClose').addEventListener('click', closeOperations);
+$('#operationsModal').addEventListener('click', (event) => { if (event.target.id === 'operationsModal') closeOperations(); });
+$('#buyBallsForm').addEventListener('submit', (event) => submitOperation(event, 'buyBalls', () => ({ ballId: Number($('#ballId').value), quantity: Number($('#ballQuantity').value) })));
+$('#sellStoneForm').addEventListener('submit', (event) => submitOperation(event, 'sellStone', () => ({ itemId: Number($('#stoneItemId').value), quantity: Number($('#stoneQuantity').value) })));
 $('#gameLoginForm').addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!gameLoginAccount) return;

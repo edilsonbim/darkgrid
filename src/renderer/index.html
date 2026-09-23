@@ -53,6 +53,31 @@
       </form>
     </section>
   </div>
+  <div class="modal-backdrop" id="operationsModal" hidden>
+    <section class="auth-modal operations-modal" role="dialog" aria-modal="true" aria-labelledby="operationsTitle">
+      <button class="modal-close" id="operationsClose" aria-label="Fechar">×</button>
+      <p class="eyebrow">OPERAÇÕES DA CONTA</p>
+      <h2 id="operationsTitle">Operações</h2>
+      <p class="modal-copy" id="operationsAccountLabel">Conta selecionada</p>
+      <div class="operation-section">
+        <h3>Comprar Pokébolas</h3>
+        <form id="buyBallsForm" class="operation-form">
+          <label>ID da Pokébola<input id="ballId" type="number" min="1" step="1" value="1" required></label>
+          <label>Quantidade<input id="ballQuantity" type="number" min="1" step="1" value="10" required></label>
+          <button class="primary-button full-width" type="submit">Comprar</button>
+        </form>
+      </div>
+      <div class="operation-section">
+        <h3>Vender pedra</h3>
+        <form id="sellStoneForm" class="operation-form">
+          <label>ID do item<input id="stoneItemId" type="number" min="1" step="1" required></label>
+          <label>Quantidade<input id="stoneQuantity" type="number" min="1" step="1" value="1" required></label>
+          <button class="ghost-button full-width" type="submit">Vender pedra</button>
+        </form>
+      </div>
+      <p class="form-error" id="operationsError" role="alert"></p>
+    </section>
+  </div>
   <script src="./app.js"></script>
 </body>
 </html>
