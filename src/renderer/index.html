@@ -113,8 +113,9 @@
       <h2 id="huntTitle">Ir para uma hunt</h2>
       <p class="modal-copy" id="huntAccountLabel">Conta selecionada</p>
       <form id="huntForm">
-        <label>Slug da hunt<input id="huntSlug" type="text" maxlength="100" required placeholder="route-1"></label>
+        <label>Slug da hunt<input id="huntSlug" list="huntOptions" type="text" maxlength="100" required placeholder="route-1"><datalist id="huntOptions"></datalist></label>
         <label>Nome exibido<input id="huntName" type="text" maxlength="100" placeholder="Route 1"></label>
+        <p class="operation-status" id="huntStatus"></p>
         <p class="form-error" id="huntError" role="alert"></p>
         <button class="primary-button full-width" type="submit">Viajar e confirmar</button>
       </form>

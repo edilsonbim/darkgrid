@@ -10,6 +10,7 @@ const { BUY_BALLS_SCRIPT, SELL_ITEMS_SCRIPT, SELL_POKEMON_SCRIPT, SELL_STONE_SCR
 const { selectSellableItems, selectSellablePokemon } = require('./sell-policy');
 const { READ_DEPOT_SCRIPT } = require('./depot-script');
 const { READ_POKEMON_SCRIPT } = require('./pokemon-script');
+const { READ_HUNTS_SCRIPT } = require('./hunt-script');
 
 const VALID_STATUSES = new Set(['online', 'stale', 'login_required']);
 
@@ -34,6 +35,7 @@ class GameAdapter extends EventEmitter {
   openDepot() { return this.#action(OPEN_DEPOT_SCRIPT); }
   readDepot() { return this.#action(READ_DEPOT_SCRIPT); }
   readPokemon() { return this.#action(READ_POKEMON_SCRIPT); }
+  readHunts() { return this.#action(READ_HUNTS_SCRIPT); }
   travelToHunt({ slug, name }) { return this.#action(travelScript(slug, name)); }
   returnToLastHunt(input) { return this.#action(returnHuntScript(input || {})); }
   detectGameLogin() { return this.#action(DETECT_GAME_LOGIN_SCRIPT); }
