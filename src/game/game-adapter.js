@@ -60,7 +60,8 @@ class GameAdapter extends EventEmitter {
     const n = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
     const hunt = raw.huntSlug ? { slug: String(raw.huntSlug), name: String(raw.huntSlug).replace(/[_-]+/g, ' ') } : null;
     if (hunt) this.lastHunt = hunt;
-    return { accountId: this.accountId, status: raw.status, hunt, level: n(raw.level), gold: n(raw.gold), balls: Math.max(0, n(raw.balls)), metrics: raw.metrics && typeof raw.metrics === 'object' ? { kills: Math.max(0, n(raw.metrics.kills)), xp: Math.max(0, n(raw.metrics.xp)), captures: Math.max(0, n(raw.metrics.captures)), shiny: Math.max(0, n(raw.metrics.shiny)), xph: Math.max(0, n(raw.metrics.xph)), kph: Math.max(0, n(raw.metrics.kph)), seconds: Math.max(0, n(raw.metrics.seconds)) } : {}, updatedAt: Date.now() };
+    const inventory = Array.isArray(raw.inventory) ? raw.inventory.slice(0, 200).map((item) => ({ itemId: String(item?.itemId || '').slice(0, 32), name: String(item?.name || '').slice(0, 80), category: String(item?.category || '').slice(0, 40), quantity: Math.max(0, n(item?.quantity)) })).filter((item) => item.itemId && item.quantity > 0) : [];
+    return { accountId: this.accountId, status: raw.status, hunt, level: n(raw.level), gold: n(raw.gold), balls: Math.max(0, n(raw.balls)), inventory, metrics: raw.metrics && typeof raw.metrics === 'object' ? { kills: Math.max(0, n(raw.metrics.kills)), xp: Math.max(0, n(raw.metrics.xp)), captures: Math.max(0, n(raw.metrics.captures)), shiny: Math.max(0, n(raw.metrics.shiny)), xph: Math.max(0, n(raw.metrics.xph)), kph: Math.max(0, n(raw.metrics.kph)), seconds: Math.max(0, n(raw.metrics.seconds)) } : {}, updatedAt: Date.now() };
   }
 }
 

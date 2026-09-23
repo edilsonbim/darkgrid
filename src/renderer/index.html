@@ -80,6 +80,15 @@
       <p class="form-error" id="operationsError" role="alert"></p>
     </section>
   </div>
+  <div class="modal-backdrop" id="inventoryModal" hidden>
+    <section class="auth-modal inventory-modal" role="dialog" aria-modal="true" aria-labelledby="inventoryTitle">
+      <button class="modal-close" id="inventoryClose" aria-label="Fechar">×</button>
+      <p class="eyebrow">MOCHILA DA CONTA</p>
+      <h2 id="inventoryTitle">Inventário</h2>
+      <p class="modal-copy" id="inventoryAccountLabel">Conta selecionada</p>
+      <div class="inventory-list" id="inventoryList"><p class="history-empty">Nenhum item encontrado.</p></div>
+    </section>
+  </div>
   <div class="alert-toasts" id="alertToasts" aria-live="polite" aria-atomic="false"></div>
   <script src="./app.js"></script>
 </body>

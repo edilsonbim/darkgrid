@@ -3,6 +3,7 @@
 const state = { accounts: [], history: [], alerts: {}, busy: false, auth: { ok: false } };
 let gameLoginAccount = null;
 let operationsAccount = null;
+let inventoryAccount = null;
 const $ = (selector) => document.querySelector(selector);
 const statusLabels = { loading: 'Carregando jogo', login_required: 'Login necessário', online: 'Online', stale: 'Sem atividade recente', offline: 'Offline', error: 'Erro no painel', opened: 'Painel aberto', closed: 'Painel oculto' };
 
@@ -34,9 +35,9 @@ function render() {
     const status = document.createElement('span'); status.className = 'account-status'; status.textContent = statusLabels[account.status] || account.status || 'Desconectada';
     const open = document.createElement('button'); open.className = 'mini-button'; open.textContent = 'Abrir'; open.addEventListener('click', () => openAccount(account));
     const actionBar = document.createElement('div'); actionBar.className = 'account-action-bar';
-    for (const [label, action] of [['Login', 'gameLogin'], ['Market', 'openMarket'], ['Depot', 'openDepot'], ['Operações', 'operations'], ['Retornar', 'returnToLastHunt'], ['Atualizar', 'refresh']]) {
+    for (const [label, action] of [['Login', 'gameLogin'], ['Market', 'openMarket'], ['Depot', 'openDepot'], ['Inventário', 'inventory'], ['Operações', 'operations'], ['Retornar', 'returnToLastHunt'], ['Atualizar', 'refresh']]) {
       const button = document.createElement('button'); button.className = 'mini-button'; button.textContent = label; button.disabled = Boolean(account.actionBusy);
-      button.addEventListener('click', () => action === 'refresh' ? refreshAccount(account) : action === 'gameLogin' ? openGameLogin(account) : action === 'operations' ? openOperations(account) : runAccountAction(account, action, action === 'returnToLastHunt' ? { slug: account.huntSlug, name: account.hunt } : {})); actionBar.append(button);
+      button.addEventListener('click', () => action === 'refresh' ? refreshAccount(account) : action === 'gameLogin' ? openGameLogin(account) : action === 'inventory' ? openInventory(account) : action === 'operations' ? openOperations(account) : runAccountAction(account, action, action === 'returnToLastHunt' ? { slug: account.huntSlug, name: account.hunt } : {})); actionBar.append(button);
     }
     actions.append(status, open); card.append(name, actions, actionBar); return card;
   }));
@@ -69,6 +70,8 @@ async function openGameLogin(account) { gameLoginAccount = account; await window
 function closeGameLogin() { gameLoginAccount = null; $('#gameLoginModal').hidden = true; $('#gameUsername').value = ''; $('#gamePassword').value = ''; $('#gameLoginError').textContent = ''; }
 function openOperations(account) { operationsAccount = account; $('#operationsAccountLabel').textContent = account.name || 'Conta selecionada'; $('#operationsError').textContent = ''; $('#operationsModal').hidden = false; $('#ballId').focus(); }
 function closeOperations() { operationsAccount = null; $('#operationsModal').hidden = true; $('#operationsError').textContent = ''; }
+async function openInventory(account) { inventoryAccount = account; await refreshAccount(account); $('#inventoryAccountLabel').textContent = account.name || 'Conta selecionada'; const list = $('#inventoryList'); const items = Array.isArray(account.inventory) ? account.inventory : []; list.replaceChildren(...(items.length ? items.map((item) => { const row = document.createElement('div'); row.className = 'inventory-row'; const name = document.createElement('span'); name.textContent = item.name || `Item ${item.itemId}`; const category = document.createElement('small'); category.textContent = item.category || `#${item.itemId}`; const quantity = document.createElement('strong'); quantity.textContent = String(item.quantity); row.append(name, category, quantity); return row; }) : [Object.assign(document.createElement('p'), { className: 'history-empty', textContent: 'Nenhum item encontrado.' })])); $('#inventoryModal').hidden = false; }
+function closeInventory() { inventoryAccount = null; $('#inventoryModal').hidden = true; }
 function renderAlertSettings() { const config = state.alerts || {}; $('#alertEnabled').checked = config.enabled !== false; $('#alertOffline').checked = config.accountOffline !== false; $('#alertNoBalls').checked = config.noBalls !== false; $('#alertNoProgress').checked = config.noProgress !== false; $('#alertLowBalls').value = Number(config.lowBalls || 0); $('#alertNoProgressMinutes').value = Math.max(1, Math.round(Number(config.noProgressSeconds || 600) / 60)); }
 function showAlert(alert) { if (!alert?.message) return; const toast = document.createElement('div'); toast.className = `alert-toast ${alert.severity || 'info'}`; const title = document.createElement('strong'); title.textContent = alert.type === 'watchdog' ? 'Recuperação' : 'Atenção'; const message = document.createElement('span'); message.textContent = alert.message; toast.append(title, message); $('#alertToasts').append(toast); setTimeout(() => toast.remove(), 8000); }
 async function submitOperation(event, action, inputFactory) {
@@ -178,6 +181,8 @@ $('#gameLoginClose').addEventListener('click', closeGameLogin);
 $('#gameLoginModal').addEventListener('click', (event) => { if (event.target.id === 'gameLoginModal') closeGameLogin(); });
 $('#operationsClose').addEventListener('click', closeOperations);
 $('#operationsModal').addEventListener('click', (event) => { if (event.target.id === 'operationsModal') closeOperations(); });
+$('#inventoryClose').addEventListener('click', closeInventory);
+$('#inventoryModal').addEventListener('click', (event) => { if (event.target.id === 'inventoryModal') closeInventory(); });
 $('#alertSettingsForm').addEventListener('submit', async (event) => { event.preventDefault(); const result = await window.darkGridAPI.saveAlertConfig({ enabled: $('#alertEnabled').checked, accountOffline: $('#alertOffline').checked, noBalls: $('#alertNoBalls').checked, noProgress: $('#alertNoProgress').checked, lowBalls: Number($('#alertLowBalls').value), noProgressSeconds: Number($('#alertNoProgressMinutes').value) * 60 }); if (result?.ok) { state.alerts = result.config; $('#settingsSaved').textContent = 'Preferências salvas'; } else $('#settingsSaved').textContent = 'Não foi possível salvar'; });
 $('#buyBallsForm').addEventListener('submit', (event) => submitOperation(event, 'buyBalls', () => ({ ballId: Number($('#ballId').value), quantity: Number($('#ballQuantity').value) })));
 $('#sellStoneForm').addEventListener('submit', (event) => submitOperation(event, 'sellStone', () => ({ itemId: Number($('#stoneItemId').value), quantity: Number($('#stoneQuantity').value) })));
