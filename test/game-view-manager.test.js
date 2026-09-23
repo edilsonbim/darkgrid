@@ -33,6 +33,8 @@ assert.equal(manager.setVisibleAll(true), true);
 assert.equal(parent.contentView.children[0].visible, true);
 assert.equal(manager.setLayout({ x: 10, y: 20, width: 600, height: 400 }), true);
 assert.equal(parent.contentView.children[0].bounds.width, 600);
+assert.equal(manager.setLayoutMode('column'), true);
+assert.equal(manager.setLayoutMode('invalid'), false);
 assert.equal(manager.remove('account-a').ok, true);
 assert.equal(parent.contentView.children.length, 0);
 console.log('DarkGrid game views: sessão, abertura, layout e remoção OK');

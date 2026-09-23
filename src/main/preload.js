@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('darkGridAPI', {
   closeAccount: (id) => ipcRenderer.invoke('account:close', id),
   removeAccount: (id) => ipcRenderer.invoke('account:remove', id),
   setAccountLayout: (layout) => ipcRenderer.invoke('account:layout', layout),
+  setLayoutMode: (mode) => ipcRenderer.invoke('account:layout-mode', mode),
   setAccountsVisible: (visible) => ipcRenderer.invoke('account:visibility', visible),
   getAccountState: (id) => ipcRenderer.invoke('account:state', id),
   accountAction: (id, action, input) => ipcRenderer.invoke('account:action', id, action, input),

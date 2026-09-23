@@ -13,6 +13,7 @@ class GameViewManager extends EventEmitter {
     this.openExternal = openExternal;
     this.views = new Map();
     this.layout = { x: 250, y: 120, width: 900, height: 650 };
+    this.layoutMode = 'grid';
   }
 
   add({ id, slot }) {
@@ -75,6 +76,13 @@ class GameViewManager extends EventEmitter {
     return true;
   }
 
+  setLayoutMode(mode) {
+    if (!['grid', 'row', 'column'].includes(String(mode))) return false;
+    this.layoutMode = String(mode);
+    for (const record of this.views.values()) this.#applyBounds(record);
+    return true;
+  }
+
   destroy() { for (const id of [...this.views.keys()]) this.remove(id); }
 
   getSurface(id) {
@@ -90,7 +98,7 @@ class GameViewManager extends EventEmitter {
 
   #applyBounds(record) {
     const count = Math.max(1, this.views.size);
-    const columns = count === 1 ? 1 : 2;
+    const columns = this.layoutMode === 'row' ? count : this.layoutMode === 'column' ? 1 : count === 1 ? 1 : 2;
     const rows = Math.ceil(count / columns);
     const ordered = [...this.views.values()];
     const index = ordered.indexOf(record);

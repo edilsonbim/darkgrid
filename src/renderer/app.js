@@ -2,6 +2,7 @@
 
 const state = { accounts: [], history: [], alerts: {}, credentials: {}, busy: false, auth: { ok: false } };
 let compactMode = false;
+let layoutMode = ['grid', 'row', 'column'].includes(localStorage.getItem('darkgrid-layout')) ? localStorage.getItem('darkgrid-layout') : 'grid';
 let gameLoginAccount = null;
 let operationsAccount = null;
 let inventoryAccount = null;
@@ -178,6 +179,12 @@ function applySnapshot(account, snapshot) {
   account.status = snapshot.status; account.name = snapshot.name || account.name; account.hunt = snapshot.hunt?.name || snapshot.hunt?.slug || 'Sem hunt'; account.huntSlug = snapshot.hunt?.slug || account.huntSlug || ''; account.level = snapshot.level; account.gold = snapshot.gold; account.metrics = snapshot.metrics || account.metrics || {}; account.analyzer = snapshot.analyzer || account.analyzer || null; account.drops = snapshot.drops || account.drops || [];
 }
 function syncLayout() { window.darkGridAPI.setAccountLayout({ x: 250, y: 112, width: Math.max(500, window.innerWidth - 270), height: Math.max(400, window.innerHeight - 135) }); }
+function renderLayoutButton() { $('#layoutButton').textContent = `Layout: ${{ grid: 'Grade', row: 'Uma linha', column: 'Uma coluna' }[layoutMode]}`; }
+async function cycleLayout() {
+  const modes = ['grid', 'row', 'column'];
+  const next = modes[(modes.indexOf(layoutMode) + 1) % modes.length];
+  if (await window.darkGridAPI.setLayoutMode(next)) { layoutMode = next; localStorage.setItem('darkgrid-layout', layoutMode); renderLayoutButton(); syncLayout(); }
+}
 async function setCompactMode(enabled) {
   compactMode = Boolean(enabled);
   document.body.classList.toggle('compact-mode', compactMode);
@@ -193,6 +200,7 @@ $('#emptyLoginButton').addEventListener('click', addAccount);
 $('#manageAccountsButton').addEventListener('click', addAccount);
 $('#refreshButton').addEventListener('click', render);
 $('#compactButton').addEventListener('click', () => setCompactMode(!compactMode));
+$('#layoutButton').addEventListener('click', cycleLayout);
 $('#exportHistoryButton').addEventListener('click', async () => { const result = await window.darkGridAPI.exportHuntHistory(); $('#historyExportStatus').textContent = result?.ok ? `Histórico exportado: ${result.filePath}` : result?.canceled ? '' : 'Não foi possível exportar o histórico'; });
 $('#logoutButton').addEventListener('click', async () => {
   const result = await window.darkGridAPI.authLogout();
@@ -272,6 +280,8 @@ async function bootstrap() {
     state.auth = await window.darkGridAPI.authStatus() || { ok: false };
     setAuthStatus(state.auth);
     state.alerts = await window.darkGridAPI.loadAlertConfig();
+    await window.darkGridAPI.setLayoutMode(layoutMode);
+    renderLayoutButton();
     const savedCredentials = await window.darkGridAPI.loadCredentials();
     state.credentials = Object.fromEntries((Array.isArray(savedCredentials) ? savedCredentials : []).map((item) => [item.id, item]));
     if (state.auth.ok) state.history = await window.darkGridAPI.loadHuntHistory();
