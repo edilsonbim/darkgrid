@@ -1,17 +1,30 @@
 'use strict';
 
-const { app, BrowserWindow, ipcMain, safeStorage, session, shell } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, safeStorage, session, shell } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { GAME_ORIGIN, MAX_ACCOUNTS } = require('../shared/constants');
+const { GameViewManager } = require('./game-view-manager');
 
 let mainWindow;
+let gameViews;
 
 function isTrustedUi(event) {
   try { return String(event.senderFrame?.url || '').startsWith('file://'); } catch { return false; }
 }
 
 function credentialsPath() { return path.join(app.getPath('userData'), 'credentials.enc'); }
+function profilesPath() { return path.join(app.getPath('userData'), 'account-profiles.json'); }
+
+function normalizeProfiles(value) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, MAX_ACCOUNTS).filter((item) => item && typeof item.id === 'string' && /^[a-zA-Z0-9_-]{1,64}$/.test(item.id)).map((item, index) => ({
+    id: item.id,
+    slot: index,
+    label: typeof item.label === 'string' ? item.label.slice(0, 60) : `Conta ${index + 1}`,
+    enabled: item.enabled !== false
+  }));
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -39,6 +52,10 @@ function createWindow() {
   mainWindow.webContents.on('will-navigate', (event, url) => {
     if (!url.startsWith('file://')) { event.preventDefault(); try { shell.openExternal(url); } catch {} }
   });
+  gameViews = new GameViewManager({ window: mainWindow, WebContentsView, gameOrigin: GAME_ORIGIN, maxAccounts: MAX_ACCOUNTS, openExternal: (url) => { try { shell.openExternal(url); } catch {} } });
+  gameViews.on('status', (payload) => mainWindow.webContents.send('account:status', payload));
+  gameViews.on('created', (payload) => mainWindow.webContents.send('account:created', payload));
+  gameViews.on('removed', (payload) => mainWindow.webContents.send('account:removed', payload));
 }
 
 ipcMain.handle('app:info', (event) => isTrustedUi(event) ? ({ version: app.getVersion(), platform: process.platform }) : null);
@@ -65,6 +82,30 @@ ipcMain.handle('credentials:save', (event, accounts) => {
   } catch { return false; }
 });
 
+ipcMain.handle('profiles:load', (event) => {
+  if (!isTrustedUi(event)) return [];
+  try { return normalizeProfiles(JSON.parse(fs.readFileSync(profilesPath(), 'utf8'))); } catch { return []; }
+});
+ipcMain.handle('profiles:save', (event, profiles) => {
+  if (!isTrustedUi(event)) return false;
+  try {
+    const target = profilesPath();
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(`${target}.tmp`, JSON.stringify(normalizeProfiles(profiles), null, 2));
+    fs.renameSync(`${target}.tmp`, target);
+    return true;
+  } catch { return false; }
+});
+
+ipcMain.handle('account:add', (event, payload) => {
+  if (!isTrustedUi(event) || !gameViews) return { ok: false, reason: 'forbidden' };
+  return gameViews.add(payload || {});
+});
+ipcMain.handle('account:open', (event, id) => isTrustedUi(event) && gameViews ? gameViews.open(String(id)) : { ok: false, reason: 'forbidden' });
+ipcMain.handle('account:close', (event, id) => isTrustedUi(event) && gameViews ? gameViews.close(String(id)) : { ok: false, reason: 'forbidden' });
+ipcMain.handle('account:remove', (event, id) => isTrustedUi(event) && gameViews ? gameViews.remove(String(id)) : { ok: false, reason: 'forbidden' });
+ipcMain.handle('account:layout', (event, layout) => isTrustedUi(event) && gameViews ? gameViews.setLayout(layout) : false);
+
 app.whenReady().then(() => {
   for (let i = 1; i <= MAX_ACCOUNTS; i++) {
     try { session.fromPartition(`persist:darkgrid-account-${i}`).setPermissionRequestHandler((_wc, _permission, callback) => callback(false)); } catch {}
@@ -73,3 +114,4 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+app.on('before-quit', () => { try { gameViews?.destroy(); } catch {} });
