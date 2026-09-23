@@ -143,7 +143,7 @@ function createWindow() {
 
   mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   mainWindow.on('close', (event) => { if (!isQuitting) { event.preventDefault(); mainWindow.hide(); } });
-  mainWindow.once('ready-to-show', () => mainWindow.show());
+  mainWindow.once('ready-to-show', () => { if (!process.argv.includes('--hidden')) mainWindow.show(); });
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     try { shell.openExternal(url); } catch {}
     return { action: 'deny' };
@@ -219,6 +219,8 @@ ipcMain.handle('history:export', async (event) => {
 });
 ipcMain.handle('alerts:load', (event) => isTrustedUi(event) && alertEngine ? alertEngine.getConfig() : { ...DEFAULT_ALERT_CONFIG });
 ipcMain.handle('alerts:save', (event, config) => { if (!isTrustedUi(event) || !alertEngine) return { ok: false, reason: 'forbidden' }; const normalized = alertEngine.configure(config || {}); return saveAlertConfig(normalized) ? { ok: true, config: normalized } : { ok: false, reason: 'alert_config_save_failed' }; });
+ipcMain.handle('app:autostart:get', (event) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; if (process.platform !== 'win32') return { ok: false, supported: false, enabled: false }; try { return { ok: true, supported: true, enabled: Boolean(app.getLoginItemSettings().openAtLogin) }; } catch { return { ok: false, supported: true, enabled: false }; } });
+ipcMain.handle('app:autostart:set', (event, enabled) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; if (process.platform !== 'win32') return { ok: false, supported: false, enabled: false }; try { app.setLoginItemSettings({ openAtLogin: Boolean(enabled), args: ['--hidden'] }); return { ok: true, supported: true, enabled: Boolean(app.getLoginItemSettings().openAtLogin) }; } catch { return { ok: false, supported: true, enabled: false }; } });
 
 ipcMain.handle('account:add', (event, payload) => {
   if (!isTrustedUi(event) || !gameViews) return { ok: false, reason: 'forbidden' };

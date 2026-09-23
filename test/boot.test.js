@@ -11,4 +11,5 @@ assert.match(fs.readFileSync(path.join(root, 'src/main/main.js'), 'utf8'), /cont
 assert.match(fs.readFileSync(path.join(root, 'package.json'), 'utf8'), /auth:dev/);
 assert.match(fs.readFileSync(path.join(root, 'src/main/main.js'), 'utf8'), /createTray/);
 assert.match(fs.readFileSync(path.join(root, 'src/main/main.js'), 'utf8'), /Mostrar DarkGrid/);
+assert.match(fs.readFileSync(path.join(root, 'src/main/main.js'), 'utf8'), /setLoginItemSettings/);
 console.log('DarkGrid boot: estrutura inicial OK');

@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('darkGridAPI', {
   exportHuntHistory: () => ipcRenderer.invoke('history:export'),
   loadAlertConfig: () => ipcRenderer.invoke('alerts:load'),
   saveAlertConfig: (config) => ipcRenderer.invoke('alerts:save', config),
+  getAutoStart: () => ipcRenderer.invoke('app:autostart:get'),
+  setAutoStart: (enabled) => ipcRenderer.invoke('app:autostart:set', enabled),
   addAccount: (account) => ipcRenderer.invoke('account:add', account),
   openAccount: (id) => ipcRenderer.invoke('account:open', id),
   closeAccount: (id) => ipcRenderer.invoke('account:close', id),
