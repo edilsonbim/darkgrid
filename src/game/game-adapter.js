@@ -3,6 +3,7 @@
 const { EventEmitter } = require('node:events');
 const { BOOTSTRAP_SCRIPT, READ_STATE_SCRIPT, OPEN_MARKET_SCRIPT, OPEN_DEPOT_SCRIPT } = require('./page-scripts');
 const { travelScript } = require('./travel-script');
+const { returnHuntScript } = require('./return-hunt-script');
 const { BUY_BALLS_SCRIPT, SELL_ITEMS_SCRIPT, SELL_POKEMON_SCRIPT, SELL_STONE_SCRIPT } = require('./operation-scripts');
 const { selectSellableItems, selectSellablePokemon } = require('./sell-policy');
 
@@ -28,6 +29,7 @@ class GameAdapter extends EventEmitter {
   openMarket() { return this.#action(OPEN_MARKET_SCRIPT); }
   openDepot() { return this.#action(OPEN_DEPOT_SCRIPT); }
   travelToHunt({ slug, name }) { return this.#action(travelScript(slug, name)); }
+  returnToLastHunt(input) { return this.#action(returnHuntScript(input || {})); }
   buyBalls(input) { return this.#action(BUY_BALLS_SCRIPT(input || {})); }
   sellItems(input) { const items = Array.isArray(input) ? input : input?.items; const protectedIds = Array.isArray(input?.protectedIds) ? input.protectedIds : []; return this.#action(SELL_ITEMS_SCRIPT(selectSellableItems(items, protectedIds))); }
   sellPokemon(pokemon) { return this.#action(SELL_POKEMON_SCRIPT(selectSellablePokemon(pokemon))); }

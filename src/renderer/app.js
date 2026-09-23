@@ -19,9 +19,9 @@ function render() {
     const status = document.createElement('span'); status.className = 'account-status'; status.textContent = statusLabels[account.status] || account.status || 'Desconectada';
     const open = document.createElement('button'); open.className = 'mini-button'; open.textContent = 'Abrir'; open.addEventListener('click', () => openAccount(account));
     const actionBar = document.createElement('div'); actionBar.className = 'account-action-bar';
-    for (const [label, action] of [['Market', 'openMarket'], ['Depot', 'openDepot'], ['Atualizar', 'refresh']]) {
+    for (const [label, action] of [['Market', 'openMarket'], ['Depot', 'openDepot'], ['Retornar', 'returnToLastHunt'], ['Atualizar', 'refresh']]) {
       const button = document.createElement('button'); button.className = 'mini-button'; button.textContent = label; button.disabled = Boolean(account.actionBusy);
-      button.addEventListener('click', () => action === 'refresh' ? refreshAccount(account) : runAccountAction(account, action)); actionBar.append(button);
+      button.addEventListener('click', () => action === 'refresh' ? refreshAccount(account) : runAccountAction(account, action, action === 'returnToLastHunt' ? { slug: account.huntSlug, name: account.hunt } : {})); actionBar.append(button);
     }
     actions.append(status, open); card.append(name, actions, actionBar); return card;
   }));
@@ -76,11 +76,11 @@ async function refreshAccount(account) {
   } catch (cause) { account.status = 'error'; account.error = cause.message; }
   finally { account.actionBusy = false; render(); }
 }
-async function runAccountAction(account, action) {
+async function runAccountAction(account, action, input = {}) {
   if (account.actionBusy) return;
   account.actionBusy = true; render();
   try {
-    const response = await window.darkGridAPI.accountAction(account.id, action, {});
+    const response = await window.darkGridAPI.accountAction(account.id, action, input);
     if (!response?.ok || !response.result?.ok) throw new Error(response?.reason || response?.result?.reason || 'action_failed');
     account.status = 'online';
   } catch (cause) { account.status = cause.message === 'game_auth_required' ? 'login_required' : 'error'; account.error = cause.message; }
@@ -88,7 +88,7 @@ async function runAccountAction(account, action) {
 }
 function applySnapshot(account, snapshot) {
   if (!snapshot) return;
-  account.status = snapshot.status; account.name = snapshot.name || account.name; account.hunt = snapshot.hunt?.name || snapshot.hunt?.slug || 'Sem hunt'; account.level = snapshot.level; account.gold = snapshot.gold;
+  account.status = snapshot.status; account.name = snapshot.name || account.name; account.hunt = snapshot.hunt?.name || snapshot.hunt?.slug || 'Sem hunt'; account.huntSlug = snapshot.hunt?.slug || account.huntSlug || ''; account.level = snapshot.level; account.gold = snapshot.gold;
 }
 function syncLayout() { window.darkGridAPI.setAccountLayout({ x: 250, y: 112, width: Math.max(500, window.innerWidth - 270), height: Math.max(400, window.innerHeight - 135) }); }
 
