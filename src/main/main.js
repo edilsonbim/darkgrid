@@ -10,12 +10,14 @@ const { GameAdapter } = require('../game/game-adapter');
 const { AccountStatePoller } = require('./account-state-poller');
 const { AuthService } = require('./auth-service');
 const { AuthRuntime } = require('./auth-runtime');
+const { HuntHistoryStore } = require('./hunt-history-store');
 
 let mainWindow;
 let gameViews;
 const gameAdapters = new Map();
 const accountPollers = new Map();
 let authRuntime;
+let huntHistory;
 const rendererUrl = trustedUiUrl(path.join(__dirname, '../renderer/index.html'));
 
 function isTrustedUi(event) {
@@ -26,6 +28,7 @@ function credentialsPath() { return path.join(app.getPath('userData'), 'credenti
 function profilesPath() { return path.join(app.getPath('userData'), 'account-profiles.json'); }
 function authSessionPath() { return path.join(app.getPath('userData'), 'auth-session.enc'); }
 function licenseCachePath() { return path.join(app.getPath('userData'), 'license-cache.enc'); }
+function huntHistoryPath() { return path.join(app.getPath('userData'), 'hunt-history.json'); }
 
 const tokenStore = {
   async load() {
@@ -96,7 +99,7 @@ function createWindow() {
   });
   gameViews = new GameViewManager({ window: mainWindow, WebContentsView, session, gameOrigin: GAME_ORIGIN, maxAccounts: MAX_ACCOUNTS, openExternal: (url) => { try { shell.openExternal(url); } catch {} } });
   gameViews.on('status', (payload) => mainWindow.webContents.send('account:status', payload));
-  gameViews.on('created', (payload) => { const surface = gameViews.getSurface(payload.id); if (surface) { const adapter = new GameAdapter({ accountId: payload.id, surface, allowedOrigin: GAME_ORIGIN }); gameAdapters.set(payload.id, adapter); const poller = new AccountStatePoller({ accountId: payload.id, adapter, recover: () => adapter.reload() }); poller.on('state', (state) => mainWindow.webContents.send('account:state-updated', state)); poller.on('error', (error) => mainWindow.webContents.send('account:state-error', error)); poller.on('stalled', (payload) => mainWindow.webContents.send('account:stalled', payload)); accountPollers.set(payload.id, poller); poller.start(); } mainWindow.webContents.send('account:created', payload); });
+  gameViews.on('created', (payload) => { const surface = gameViews.getSurface(payload.id); if (surface) { const adapter = new GameAdapter({ accountId: payload.id, surface, allowedOrigin: GAME_ORIGIN }); gameAdapters.set(payload.id, adapter); const poller = new AccountStatePoller({ accountId: payload.id, adapter, recover: () => adapter.reload() }); poller.on('state', (state) => { const entry = huntHistory?.record(state.state); if (entry) mainWindow.webContents.send('history:updated', entry); mainWindow.webContents.send('account:state-updated', state); }); poller.on('error', (error) => mainWindow.webContents.send('account:state-error', error)); poller.on('stalled', (payload) => mainWindow.webContents.send('account:stalled', payload)); accountPollers.set(payload.id, poller); poller.start(); } mainWindow.webContents.send('account:created', payload); });
   gameViews.on('status', (payload) => { if (payload.status === 'login_required') gameAdapters.get(payload.id)?.bootstrap().catch(() => {}); });
   gameViews.on('status', (payload) => { const poller = accountPollers.get(payload.id); if (!poller) return; if (payload.status === 'closed') poller.stop(); if (payload.status === 'opened') poller.start(); });
   gameViews.on('removed', (payload) => { accountPollers.get(payload.id)?.dispose(); accountPollers.delete(payload.id); gameAdapters.delete(payload.id); mainWindow.webContents.send('account:removed', payload); });
@@ -151,6 +154,7 @@ ipcMain.handle('profiles:save', (event, profiles) => {
     return true;
   } catch { return false; }
 });
+ipcMain.handle('history:load', (event) => isTrustedUi(event) && huntHistory ? huntHistory.getAll() : []);
 
 ipcMain.handle('account:add', (event, payload) => {
   if (!isTrustedUi(event) || !gameViews) return { ok: false, reason: 'forbidden' };
@@ -165,6 +169,7 @@ ipcMain.handle('account:action', async (event, id, action, input) => { if (!isTr
 
 app.whenReady().then(() => {
   authRuntime = createAuthRuntime();
+  huntHistory = new HuntHistoryStore({ filePath: huntHistoryPath() });
   for (let i = 1; i <= MAX_ACCOUNTS; i++) {
     try { session.fromPartition(`persist:darkgrid-account-${i}`).setPermissionRequestHandler((_wc, _permission, callback) => callback(false)); } catch {}
   }

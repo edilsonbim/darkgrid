@@ -1,6 +1,6 @@
 'use strict';
 
-const state = { accounts: [], busy: false, auth: { ok: false } };
+const state = { accounts: [], history: [], busy: false, auth: { ok: false } };
 let gameLoginAccount = null;
 let operationsAccount = null;
 const $ = (selector) => document.querySelector(selector);
@@ -41,6 +41,18 @@ function render() {
     actions.append(status, open); card.append(name, actions, actionBar); return card;
   }));
   $('#emptyState').style.display = state.accounts.length ? 'none' : 'grid';
+  const history = $('#historyList');
+  if (!state.history.length) { history.replaceChildren(Object.assign(document.createElement('p'), { className: 'history-empty', textContent: 'Nenhuma hunt encerrada ainda.' })); return; }
+  history.replaceChildren(...state.history.slice(0, 8).map((entry) => {
+    const row = document.createElement('article'); row.className = 'history-row';
+    const title = document.createElement('div'); title.className = 'history-title';
+    const hunt = document.createElement('strong'); hunt.textContent = entry.huntName || entry.huntSlug;
+    const account = document.createElement('small'); account.textContent = entry.accountName || entry.accountId;
+    title.append(hunt, account);
+    const stats = document.createElement('span'); stats.className = 'history-stats'; stats.textContent = `${Number(entry.kills || 0).toLocaleString('pt-BR')} kills · ${Number(entry.xp || 0).toLocaleString('pt-BR')} XP · ${entry.captures || 0} capturas · ${entry.shiny || 0} shiny`;
+    const date = document.createElement('time'); date.className = 'history-date'; date.dateTime = new Date(entry.finishedAt).toISOString(); date.textContent = new Date(entry.finishedAt).toLocaleString('pt-BR');
+    row.append(title, stats, date); return row;
+  }));
 }
 
 function setAuthStatus(status) {
@@ -181,6 +193,7 @@ $('#gameLoginForm').addEventListener('submit', async (event) => {
 window.addEventListener('resize', syncLayout);
 window.darkGridAPI.onAccountStatus((payload) => { const account = state.accounts.find((item) => item.id === payload.id); if (account) { account.status = payload.status; render(); } });
 window.darkGridAPI.onAccountState((payload) => { const account = state.accounts.find((item) => item.id === payload.accountId); if (account) { applySnapshot(account, payload.state); render(); } });
+window.darkGridAPI.onHistoryUpdated((entry) => { if (!entry) return; state.history = [entry, ...state.history.filter((item) => item.finishedAt !== entry.finishedAt || item.accountId !== entry.accountId)].slice(0, 150); render(); });
 document.querySelectorAll('.nav-item').forEach((button) => button.addEventListener('click', () => {
   document.querySelectorAll('.nav-item').forEach((item) => item.classList.remove('active'));
   button.classList.add('active');
@@ -190,6 +203,7 @@ async function bootstrap() {
   try {
     state.auth = await window.darkGridAPI.authStatus() || { ok: false };
     setAuthStatus(state.auth);
+    if (state.auth.ok) state.history = await window.darkGridAPI.loadHuntHistory();
     if (state.auth.ok) await restoreAccounts();
     else render();
   } catch { state.auth = { ok: false, reason: 'auth_required' }; setAuthStatus(state.auth); render(); }
