@@ -1,0 +1,14 @@
+{
+  "name": "darkgrid",
+  "version": "0.1.0",
+  "description": "Central de contas e farm para o DarkGrid",
+  "main": "src/main/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js"
+  },
+  "devDependencies": {
+    "electron": "^43.1.1"
+  }
+}

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DarkGrid</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">D</span><div><strong>DarkGrid</strong><small>control center</small></div></div>
+      <nav aria-label="Navegação principal">
+        <button class="nav-item active" data-view="overview"><span>◈</span> Visão geral</button>
+        <button class="nav-item" data-view="accounts"><span>◎</span> Contas</button>
+        <button class="nav-item" data-view="settings"><span>⚙</span> Configurações</button>
+      </nav>
+      <div class="sidebar-foot"><span class="status-dot"></span><span id="connectionLabel">Modo local</span></div>
+    </aside>
+    <main class="main-content">
+      <header class="topbar"><div><p class="eyebrow">DASHBOARD</p><h1>Visão geral</h1></div><div class="top-actions"><button class="ghost-button" id="refreshButton">Atualizar</button><button class="primary-button" id="loginButton">Entrar</button></div></header>
+      <section class="summary-grid" aria-label="Resumo"><article class="summary-card"><span>Contas ativas</span><strong id="activeCount">0/4</strong><small>nenhuma sessão iniciada</small></article><article class="summary-card"><span>Status do farm</span><strong class="muted-value">Aguardando</strong><small>conecte uma conta para começar</small></article><article class="summary-card"><span>Desempenho</span><strong class="accent-value">Eco</strong><small>painel leve ativado</small></article></section>
+      <section class="section-heading"><div><p class="eyebrow">SESSÕES</p><h2>Contas</h2></div><button class="ghost-button" id="manageAccountsButton">Gerenciar</button></section>
+      <section class="accounts-grid" id="accountsGrid"></section>
+      <section class="empty-state" id="emptyState"><div class="empty-icon">＋</div><h2>Comece adicionando uma conta</h2><p>O DarkGrid mantém cada sessão isolada e mostra apenas o que importa para o seu farm.</p><button class="primary-button" id="emptyLoginButton">Adicionar conta</button></section>
+    </main>
+  </div>
+  <script src="./app.js"></script>
+</body>
+</html>
