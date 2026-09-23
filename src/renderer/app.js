@@ -1,6 +1,6 @@
 'use strict';
 
-const state = { accounts: [], history: [], busy: false, auth: { ok: false } };
+const state = { accounts: [], history: [], alerts: {}, busy: false, auth: { ok: false } };
 let gameLoginAccount = null;
 let operationsAccount = null;
 const $ = (selector) => document.querySelector(selector);
@@ -69,6 +69,8 @@ async function openGameLogin(account) { gameLoginAccount = account; await window
 function closeGameLogin() { gameLoginAccount = null; $('#gameLoginModal').hidden = true; $('#gameUsername').value = ''; $('#gamePassword').value = ''; $('#gameLoginError').textContent = ''; }
 function openOperations(account) { operationsAccount = account; $('#operationsAccountLabel').textContent = account.name || 'Conta selecionada'; $('#operationsError').textContent = ''; $('#operationsModal').hidden = false; $('#ballId').focus(); }
 function closeOperations() { operationsAccount = null; $('#operationsModal').hidden = true; $('#operationsError').textContent = ''; }
+function renderAlertSettings() { const config = state.alerts || {}; $('#alertEnabled').checked = config.enabled !== false; $('#alertOffline').checked = config.accountOffline !== false; $('#alertNoBalls').checked = config.noBalls !== false; $('#alertNoProgress').checked = config.noProgress !== false; $('#alertLowBalls').value = Number(config.lowBalls || 0); $('#alertNoProgressMinutes').value = Math.max(1, Math.round(Number(config.noProgressSeconds || 600) / 60)); }
+function showAlert(alert) { if (!alert?.message) return; const toast = document.createElement('div'); toast.className = `alert-toast ${alert.severity || 'info'}`; const title = document.createElement('strong'); title.textContent = alert.type === 'watchdog' ? 'Recuperação' : 'Atenção'; const message = document.createElement('span'); message.textContent = alert.message; toast.append(title, message); $('#alertToasts').append(toast); setTimeout(() => toast.remove(), 8000); }
 async function submitOperation(event, action, inputFactory) {
   event.preventDefault();
   if (!operationsAccount || operationsAccount.actionBusy) return;
@@ -175,6 +177,7 @@ $('#gameLoginClose').addEventListener('click', closeGameLogin);
 $('#gameLoginModal').addEventListener('click', (event) => { if (event.target.id === 'gameLoginModal') closeGameLogin(); });
 $('#operationsClose').addEventListener('click', closeOperations);
 $('#operationsModal').addEventListener('click', (event) => { if (event.target.id === 'operationsModal') closeOperations(); });
+$('#alertSettingsForm').addEventListener('submit', async (event) => { event.preventDefault(); const result = await window.darkGridAPI.saveAlertConfig({ enabled: $('#alertEnabled').checked, accountOffline: $('#alertOffline').checked, noBalls: $('#alertNoBalls').checked, noProgress: $('#alertNoProgress').checked, lowBalls: Number($('#alertLowBalls').value), noProgressSeconds: Number($('#alertNoProgressMinutes').value) * 60 }); if (result?.ok) { state.alerts = result.config; $('#settingsSaved').textContent = 'Preferências salvas'; } else $('#settingsSaved').textContent = 'Não foi possível salvar'; });
 $('#buyBallsForm').addEventListener('submit', (event) => submitOperation(event, 'buyBalls', () => ({ ballId: Number($('#ballId').value), quantity: Number($('#ballQuantity').value) })));
 $('#sellStoneForm').addEventListener('submit', (event) => submitOperation(event, 'sellStone', () => ({ itemId: Number($('#stoneItemId').value), quantity: Number($('#stoneQuantity').value) })));
 $('#gameLoginForm').addEventListener('submit', async (event) => {
@@ -194,15 +197,19 @@ window.addEventListener('resize', syncLayout);
 window.darkGridAPI.onAccountStatus((payload) => { const account = state.accounts.find((item) => item.id === payload.id); if (account) { account.status = payload.status; render(); } });
 window.darkGridAPI.onAccountState((payload) => { const account = state.accounts.find((item) => item.id === payload.accountId); if (account) { applySnapshot(account, payload.state); render(); } });
 window.darkGridAPI.onHistoryUpdated((entry) => { if (!entry) return; state.history = [entry, ...state.history.filter((item) => item.finishedAt !== entry.finishedAt || item.accountId !== entry.accountId)].slice(0, 150); render(); });
+window.darkGridAPI.onAccountAlert(showAlert);
 document.querySelectorAll('.nav-item').forEach((button) => button.addEventListener('click', () => {
   document.querySelectorAll('.nav-item').forEach((item) => item.classList.remove('active'));
   button.classList.add('active');
+  $('#settingsPanel').hidden = button.dataset.view !== 'settings';
+  if (button.dataset.view === 'settings') { renderAlertSettings(); $('#settingsPanel').scrollIntoView({ block: 'start' }); }
 }));
 
 async function bootstrap() {
   try {
     state.auth = await window.darkGridAPI.authStatus() || { ok: false };
     setAuthStatus(state.auth);
+    state.alerts = await window.darkGridAPI.loadAlertConfig();
     if (state.auth.ok) state.history = await window.darkGridAPI.loadHuntHistory();
     if (state.auth.ok) await restoreAccounts();
     else render();

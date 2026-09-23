@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('darkGridAPI', {
   loadProfiles: () => ipcRenderer.invoke('profiles:load'),
   saveProfiles: (profiles) => ipcRenderer.invoke('profiles:save', profiles),
   loadHuntHistory: () => ipcRenderer.invoke('history:load'),
+  loadAlertConfig: () => ipcRenderer.invoke('alerts:load'),
+  saveAlertConfig: (config) => ipcRenderer.invoke('alerts:save', config),
   addAccount: (account) => ipcRenderer.invoke('account:add', account),
   openAccount: (id) => ipcRenderer.invoke('account:open', id),
   closeAccount: (id) => ipcRenderer.invoke('account:close', id),
@@ -23,5 +25,6 @@ contextBridge.exposeInMainWorld('darkGridAPI', {
   onAccountStatus: (callback) => ipcRenderer.on('account:status', (_event, payload) => callback(payload)),
   onAccountCreated: (callback) => ipcRenderer.on('account:created', (_event, payload) => callback(payload)),
   onAccountRemoved: (callback) => ipcRenderer.on('account:removed', (_event, payload) => callback(payload)),
-  onHistoryUpdated: (callback) => ipcRenderer.on('history:updated', (_event, payload) => callback(payload))
+  onHistoryUpdated: (callback) => ipcRenderer.on('history:updated', (_event, payload) => callback(payload)),
+  onAccountAlert: (callback) => ipcRenderer.on('account:alert', (_event, payload) => callback(payload))
 });
