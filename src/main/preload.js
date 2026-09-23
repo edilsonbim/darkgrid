@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('darkGridAPI', {
   authStatus: () => ipcRenderer.invoke('auth:status'),
   authLogin: (email, password) => ipcRenderer.invoke('auth:login', email, password),
   authLogout: () => ipcRenderer.invoke('auth:logout'),
+  calculateTierlist: (catalog, level) => ipcRenderer.invoke('analytics:tierlist', catalog, level),
   onAccountState: (callback) => ipcRenderer.on('account:state-updated', (_event, payload) => callback(payload)),
   onAccountStatus: (callback) => ipcRenderer.on('account:status', (_event, payload) => callback(payload)),
   onAccountCreated: (callback) => ipcRenderer.on('account:created', (_event, payload) => callback(payload)),
