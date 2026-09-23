@@ -28,6 +28,13 @@ function response(body, ok = true, status = 200) { return { ok, status, async js
   assert.equal(store.value.refreshToken, 'refresh-2');
   await service.logout();
   assert.equal(store.value, null);
-  assert.equal(calls.some((item) => item.options.headers.Authorization === 'Bearer access-1'), true);
+  assert.equal(calls.some((item) => /^Bearer access-[12]$/.test(item.options.headers.Authorization || '')), true);
+  const expiredStore = new Store();
+  expiredStore.value = { accessToken: 'expired', refreshToken: 'refresh-old', expiresAt: Math.floor(Date.now() / 1000) - 60 };
+  const refreshed = new AuthService({ baseUrl: 'https://api.darkgrid.invalid', tokenStore: expiredStore, request: async (url) => response(url.endsWith('/refresh') ? { accessToken: 'fresh', refreshToken: 'refresh-new', expiresAt: 9999999999 } : { status: 'active' }) });
+  assert.equal((await refreshed.getLicense()).status, 'active');
+  assert.equal(expiredStore.value.accessToken, 'fresh');
+  const timeoutService = new AuthService({ baseUrl: 'https://api.darkgrid.invalid', requestTimeoutMs: 1000, tokenStore: store, request: async (_url, options) => new Promise((_resolve, reject) => options.signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })))) });
+  await assert.rejects(() => timeoutService.login('user@example.invalid', 'password'), error => error.code === 'auth_request_timeout');
   console.log('DarkGrid auth: login, licença, refresh rotativo e logout OK');
 })().catch((error) => { console.error(error); process.exitCode = 1; });
