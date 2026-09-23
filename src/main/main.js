@@ -15,6 +15,7 @@ const { HuntHistoryStore } = require('./hunt-history-store');
 const { AlertEngine, DEFAULT_ALERT_CONFIG, normalizeAlertConfig } = require('../shared/alert-engine');
 const { historyToCsv } = require('../shared/history-csv');
 const { calculateTierList } = require('../shared/tierlist');
+const { projectPokemon } = require('../shared/iv-math');
 
 let mainWindow;
 let gameViews;
@@ -153,6 +154,7 @@ ipcMain.handle('auth:status', async (event) => { if (!isTrustedUi(event)) return
 ipcMain.handle('auth:login', async (event, email, password) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; if (!authRuntime) return { ok: false, reason: 'auth_server_not_configured' }; try { return await authRuntime.login(email, password); } catch (cause) { return { ok: false, reason: cause.code || cause.message || 'auth_failed' }; } });
 ipcMain.handle('auth:logout', async (event) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; if (!authRuntime) return { ok: true }; try { return await authRuntime.logout(); } catch (cause) { return { ok: false, reason: cause.code || 'logout_failed' }; } });
 ipcMain.handle('analytics:tierlist', (event, catalog, level) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; try { return { ok: true, rows: calculateTierList(catalog, level) }; } catch { return { ok: false, reason: 'tierlist_failed' }; } });
+ipcMain.handle('analytics:iv', (event, pokemon) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; try { return { ok: true, result: projectPokemon(pokemon || {}) }; } catch { return { ok: false, reason: 'iv_failed' }; } });
 
 ipcMain.handle('credentials:load', (event) => {
   if (!isTrustedUi(event)) return [];
