@@ -12,6 +12,7 @@ assert.match(html, /id="buyBallsForm"/);
 assert.match(html, /id="performanceValue"/);
 assert.match(html, /id="historyList"/);
 assert.match(html, /id="alertSettingsForm"/);
+assert.match(html, /id="alertNativeNotifications"/);
 assert.match(html, /id="exportHistoryButton"/);
 assert.match(html, /id="inventoryModal"/);
 assert.match(html, /id="loadDepotButton"/);

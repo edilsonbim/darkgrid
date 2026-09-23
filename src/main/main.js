@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, WebContentsView, ipcMain, safeStorage, session, shell, dialog } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, safeStorage, session, shell, dialog, Notification } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
@@ -38,7 +38,14 @@ function huntHistoryPath() { return path.join(app.getPath('userData'), 'hunt-his
 function alertConfigPath() { return path.join(app.getPath('userData'), 'alert-config.json'); }
 function loadAlertConfig() { try { return normalizeAlertConfig(JSON.parse(fs.readFileSync(alertConfigPath(), 'utf8'))); } catch { return { ...DEFAULT_ALERT_CONFIG }; } }
 function saveAlertConfig(config) { try { const target = alertConfigPath(); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(`${target}.tmp`, JSON.stringify(normalizeAlertConfig(config), null, 2)); fs.renameSync(`${target}.tmp`, target); return true; } catch { return false; } }
-function sendAlerts(alerts) { for (const alert of alerts || []) mainWindow?.webContents.send('account:alert', alert); }
+function sendAlerts(alerts) {
+  for (const alert of alerts || []) {
+    mainWindow?.webContents.send('account:alert', alert);
+    if (alertEngine?.getConfig().nativeNotifications !== false && Notification.isSupported()) {
+      try { new Notification({ title: 'DarkGrid', body: alert.message, silent: false }).show(); } catch {}
+    }
+  }
+}
 
 const tokenStore = {
   async load() {
