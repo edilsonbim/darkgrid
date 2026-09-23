@@ -15,8 +15,13 @@ class AuthRuntime extends EventEmitter {
 
   async login(email, password) {
     const session = await this.service.login(String(email || '').trim(), String(password || ''));
-    const license = await this.refreshLicense();
-    return { ok: true, expiresAt: session.expiresAt, license };
+    try {
+      const license = await this.refreshLicense();
+      return { ok: true, expiresAt: session.expiresAt, license };
+    } catch (cause) {
+      try { await this.service.logout(); } catch {}
+      throw cause;
+    }
   }
 
   async refreshLicense() {

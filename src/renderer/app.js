@@ -32,7 +32,7 @@ function render() {
 function setAuthStatus(status) {
   const label = $('#licenseLabel');
   if (!status?.ok) { label.textContent = status?.reason === 'auth_server_not_configured' ? 'Servidor não configurado' : 'Licença não verificada'; label.className = 'license-badge'; return; }
-  label.textContent = `Plano ${status.plan || 'ativo'}`;
+  label.textContent = status.offlineGrace ? 'Licença offline · grace' : `Plano ${status.plan || 'ativo'}`;
   label.className = 'license-badge active';
 }
 
@@ -43,6 +43,7 @@ function closeGameLogin() { gameLoginAccount = null; $('#gameLoginModal').hidden
 
 async function addAccount() {
   if (!state.auth.ok) { openAuthModal(); return; }
+  if (state.auth.offlineGrace) { $('#connectionLabel').textContent = 'Grace offline: novas ativações bloqueadas'; return; }
   if (state.accounts.length >= 4 || state.busy) return;
   state.busy = true;
   const slot = state.accounts.length;

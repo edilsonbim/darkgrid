@@ -25,5 +25,9 @@ license.signature = crypto.sign(null, Buffer.from(licensePayload(license)), priv
   assert.equal((await restored.getStatus()).ok, true);
   await runtime.logout();
   assert.equal(cleared, true);
+  let invalidated = false;
+  const invalidRuntime = new AuthRuntime({ publicKey: publicPem, service: { async login() { return { accessToken: 'a', refreshToken: 'r' }; }, async getLicense() { return { ...license, signature: 'invalid' }; }, async logout() { invalidated = true; } } });
+  await assert.rejects(() => invalidRuntime.login('user@example.test', 'password'));
+  assert.equal(invalidated, true);
   console.log('DarkGrid auth runtime: login, verificação local de licença e logout OK');
 })().catch(error => { console.error(error); process.exitCode = 1; });
