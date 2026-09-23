@@ -7,12 +7,13 @@ function licensePayload(license) {
   return JSON.stringify(payload);
 }
 
-function verifyLicense(license, publicKey, now = Date.now()) {
+function verifyLicense(license, publicKey, now = Date.now(), expectedDeviceId = '') {
   if (!license || typeof license !== 'object' || typeof license.signature !== 'string') return { ok: false, reason: 'license_malformed' };
   if (!publicKey || typeof publicKey !== 'string') return { ok: false, reason: 'license_public_key_missing' };
   try {
     const valid = crypto.verify(null, Buffer.from(licensePayload(license)), publicKey, Buffer.from(license.signature, 'base64'));
     if (!valid) return { ok: false, reason: 'license_signature_invalid' };
+    if (expectedDeviceId && String(license.deviceId || '') !== String(expectedDeviceId)) return { ok: false, reason: 'license_device_mismatch' };
     const seconds = Math.floor(now / 1000);
     if (Number.isFinite(license.expiresAt) && seconds > license.expiresAt) {
       const grace = Number.isFinite(license.graceUntil) && seconds <= license.graceUntil;

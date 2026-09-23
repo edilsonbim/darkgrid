@@ -10,6 +10,8 @@ const signature = crypto.sign(null, Buffer.from(licensePayload(base)), privateKe
 const publicPem = publicKey.export({ type: 'spki', format: 'pem' });
 
 assert.equal(verifyLicense({ ...base, signature }, publicPem, 1700000000000).ok, true);
+assert.equal(verifyLicense({ ...base, signature }, publicPem, 1700000000000, 'other-device').reason, 'license_device_mismatch');
+assert.equal(verifyLicense({ ...base, signature }, publicPem, 1700000000000, 'dev_test').ok, true);
 assert.equal(verifyLicense({ ...base, signature: `${signature.slice(0, -2)}xx` }, publicPem).ok, false);
 assert.equal(verifyLicense({ ...base, signature }, publicPem, 2100000000000).reason, 'license_expired');
 console.log('DarkGrid license: assinatura, adulteração e expiração OK');

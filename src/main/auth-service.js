@@ -3,18 +3,24 @@
 const { EventEmitter } = require('node:events');
 
 class AuthService extends EventEmitter {
-  constructor({ baseUrl, request = globalThis.fetch, tokenStore, requestTimeoutMs = 15000 }) {
+  constructor({ baseUrl, request = globalThis.fetch, tokenStore, requestTimeoutMs = 15000, allowInsecureLocalhost = false }) {
     super();
     if (!baseUrl || typeof request !== 'function' || !tokenStore) throw new TypeError('AuthService requer baseUrl, request e tokenStore');
-    this.baseUrl = String(baseUrl).replace(/\/$/, '');
+    let parsed;
+    try { parsed = new URL(String(baseUrl)); } catch { throw Object.assign(new Error('auth_url_invalid'), { code: 'auth_url_invalid' }); }
+    const localInsecure = parsed.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname);
+    if (parsed.protocol !== 'https:' && !(allowInsecureLocalhost && localInsecure)) throw Object.assign(new Error('auth_url_https_required'), { code: 'auth_url_https_required' });
+    this.baseUrl = parsed.toString().replace(/\/$/, '');
     this.request = request;
     this.tokenStore = tokenStore;
     this.requestTimeoutMs = Math.max(1000, Number(requestTimeoutMs) || 15000);
     this.session = null;
   }
 
-  async login(email, password) {
-    const response = await this.#json('/v1/auth/login', { method: 'POST', body: { email, password } });
+  async login(email, password, deviceId = '') {
+    const body = { email, password };
+    if (deviceId) body.deviceId = String(deviceId).slice(0, 128);
+    const response = await this.#json('/v1/auth/login', { method: 'POST', body });
     await this.#setSession(response);
     return this.session;
   }

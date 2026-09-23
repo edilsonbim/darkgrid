@@ -21,7 +21,7 @@ $env:DARKGRID_LICENSE_PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----`n...`n-----END PU
 npm start
 ```
 
-O backend e a chave pública de produção não fazem parte deste repositório. Sem essa configuração, o aplicativo permanece explicitamente em “Servidor não configurado” e não restaura contas.
+O backend e a chave pública de produção não fazem parte deste repositório. Sem essa configuração, o aplicativo permanece explicitamente em “Servidor não configurado” e não restaura contas. Em produção, `DARKGRID_AUTH_URL` deve ser HTTPS; `http://localhost` só é aceito para desenvolvimento local. A licença também fica vinculada ao identificador protegido da instalação.
 
 Para gerar os executáveis Windows:
 

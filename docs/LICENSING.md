@@ -8,7 +8,7 @@ login → validar assinatura → ativar dispositivo → emitir licença assinada
 
 ## Requisitos do servidor
 
-- API HTTPS em Node.js/TypeScript.
+- API HTTPS em Node.js/TypeScript (o cliente rejeita endpoints HTTP públicos).
 - PostgreSQL para usuários, planos, assinaturas e dispositivos.
 - Argon2id para senhas.
 - Access token curto e refresh token rotativo.
@@ -16,9 +16,12 @@ login → validar assinatura → ativar dispositivo → emitir licença assinada
 - Chave privada somente no servidor.
 - Webhook idempotente do provedor de pagamento.
 - Revogação de dispositivo e licença.
+- Licença vinculada ao identificador de instalação protegido pelo `safeStorage`.
 - Auditoria de login, renovação, revogação e falhas.
 
 O cliente já possui um `AuthService` isolado para login, refresh rotativo, consulta de licença e logout. O armazenamento de tokens é injetável para que a implementação de produção use `safeStorage`, sem colocar refresh token em `localStorage`.
+
+No login, o cliente envia apenas um identificador de instalação não secreto (`deviceId`). A API deve decidir se o dispositivo está ativado e emitir a licença assinada para esse identificador. O executável valida a assinatura e rejeita uma licença emitida para outro dispositivo.
 
 ## Comportamento offline
 

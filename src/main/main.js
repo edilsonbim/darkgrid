@@ -3,6 +3,7 @@
 const { app, BrowserWindow, WebContentsView, ipcMain, safeStorage, session, shell, dialog } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const crypto = require('node:crypto');
 const { trustedUiUrl, isTrustedUiUrl } = require('./trusted-ui');
 const { GAME_ORIGIN, MAX_ACCOUNTS } = require('../shared/constants');
 const { GameViewManager } = require('./game-view-manager');
@@ -31,6 +32,7 @@ function credentialsPath() { return path.join(app.getPath('userData'), 'credenti
 function profilesPath() { return path.join(app.getPath('userData'), 'account-profiles.json'); }
 function authSessionPath() { return path.join(app.getPath('userData'), 'auth-session.enc'); }
 function licenseCachePath() { return path.join(app.getPath('userData'), 'license-cache.enc'); }
+function deviceIdPath() { return path.join(app.getPath('userData'), 'device-id.enc'); }
 function huntHistoryPath() { return path.join(app.getPath('userData'), 'hunt-history.json'); }
 function alertConfigPath() { return path.join(app.getPath('userData'), 'alert-config.json'); }
 function loadAlertConfig() { try { return normalizeAlertConfig(JSON.parse(fs.readFileSync(alertConfigPath(), 'utf8'))); } catch { return { ...DEFAULT_ALERT_CONFIG }; } }
@@ -67,6 +69,20 @@ const licenseStore = {
   },
   async clear() { try { fs.rmSync(licenseCachePath(), { force: true }); } catch {} }
 };
+
+function installationDeviceId() {
+  if (!safeStorage.isEncryptionAvailable()) throw new Error('secure_storage_unavailable');
+  try {
+    const stored = safeStorage.decryptString(fs.readFileSync(deviceIdPath())).trim();
+    if (/^[a-f0-9-]{20,128}$/i.test(stored)) return stored;
+  } catch {}
+  const deviceId = crypto.randomUUID();
+  const target = deviceIdPath();
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(`${target}.tmp`, safeStorage.encryptString(deviceId));
+  fs.renameSync(`${target}.tmp`, target);
+  return deviceId;
+}
 
 function normalizeProfiles(value) {
   if (!Array.isArray(value)) return [];
@@ -116,7 +132,7 @@ function createAuthRuntime() {
   const baseUrl = String(process.env.DARKGRID_AUTH_URL || '').trim();
   const publicKey = String(process.env.DARKGRID_LICENSE_PUBLIC_KEY || '').replace(/\\n/g, '\n');
   if (!baseUrl || !publicKey) return null;
-  try { return new AuthRuntime({ service: new AuthService({ baseUrl, tokenStore }), publicKey, licenseStore }); } catch { return null; }
+  try { return new AuthRuntime({ service: new AuthService({ baseUrl, tokenStore, allowInsecureLocalhost: process.env.NODE_ENV !== 'production' }), publicKey, licenseStore, deviceId: installationDeviceId() }); } catch { return null; }
 }
 
 ipcMain.handle('app:info', (event) => isTrustedUi(event) ? ({ version: app.getVersion(), platform: process.platform }) : null);
