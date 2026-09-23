@@ -59,11 +59,7 @@ class HuntHistoryStore {
         huntSlug: previous.huntSlug,
         huntName: previous.huntName,
         finishedAt: Date.now(),
-        kills: previous.metrics.kills,
-        xp: previous.metrics.xp,
-        captures: previous.metrics.captures,
-        shiny: previous.metrics.shiny,
-        durationSeconds: previous.metrics.seconds
+        metrics: previous.metrics
       });
       this.entries.push(entry);
       this.entries = this.entries.slice(-this.maxEntries);
@@ -88,24 +84,39 @@ class HuntHistoryStore {
         xp: Math.max(0, finite(metrics.xp)),
         captures: Math.max(0, finite(metrics.captures)),
         shiny: Math.max(0, finite(metrics.shiny)),
-        seconds: Math.max(0, finite(metrics.seconds))
+        seconds: Math.max(0, finite(metrics.seconds)),
+        gph: finite(metrics.gph),
+        balance: finite(metrics.balance),
+        lootGold: Math.max(0, finite(metrics.lootGold)),
+        capturesGold: Math.max(0, finite(metrics.capturesGold)),
+        supplyGold: Math.max(0, finite(metrics.supplyGold)),
+        ballsUsed: Math.max(0, finite(metrics.ballsUsed)),
+        potionsUsed: Math.max(0, finite(metrics.potionsUsed))
       },
       updatedAt: Math.max(0, finite(value?.updatedAt))
     };
   }
 
   #normalizeEntry(value) {
+    const metrics = value?.metrics && typeof value.metrics === 'object' ? value.metrics : value;
     return {
       accountId: text(value?.accountId, 64),
       accountName: text(value?.accountName, 80),
       huntSlug: text(value?.huntSlug, 100),
       huntName: text(value?.huntName || value?.huntSlug, 100),
       finishedAt: Math.max(0, finite(value?.finishedAt, Date.now())),
-      kills: Math.max(0, finite(value?.kills)),
-      xp: Math.max(0, finite(value?.xp)),
-      captures: Math.max(0, finite(value?.captures)),
-      shiny: Math.max(0, finite(value?.shiny)),
-      durationSeconds: Math.max(0, finite(value?.durationSeconds))
+      kills: Math.max(0, finite(value?.kills ?? metrics?.kills)),
+      xp: Math.max(0, finite(value?.xp ?? metrics?.xp)),
+      captures: Math.max(0, finite(value?.captures ?? metrics?.captures)),
+      shiny: Math.max(0, finite(value?.shiny ?? metrics?.shiny)),
+      durationSeconds: Math.max(0, finite(value?.durationSeconds ?? metrics?.seconds)),
+      gph: finite(value?.gph ?? metrics?.gph),
+      balance: finite(value?.balance ?? metrics?.balance),
+      lootGold: Math.max(0, finite(value?.lootGold ?? metrics?.lootGold)),
+      capturesGold: Math.max(0, finite(value?.capturesGold ?? metrics?.capturesGold)),
+      supplyGold: Math.max(0, finite(value?.supplyGold ?? metrics?.supplyGold)),
+      ballsUsed: Math.max(0, finite(value?.ballsUsed ?? metrics?.ballsUsed)),
+      potionsUsed: Math.max(0, finite(value?.potionsUsed ?? metrics?.potionsUsed))
     };
   }
 

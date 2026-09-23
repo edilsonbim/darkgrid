@@ -53,7 +53,7 @@ function render() {
     const hunt = document.createElement('strong'); hunt.textContent = entry.huntName || entry.huntSlug;
     const account = document.createElement('small'); account.textContent = entry.accountName || entry.accountId;
     title.append(hunt, account);
-    const stats = document.createElement('span'); stats.className = 'history-stats'; stats.textContent = `${Number(entry.kills || 0).toLocaleString('pt-BR')} kills · ${Number(entry.xp || 0).toLocaleString('pt-BR')} XP · ${entry.captures || 0} capturas · ${entry.shiny || 0} shiny`;
+    const stats = document.createElement('span'); stats.className = 'history-stats'; stats.textContent = `${Number(entry.kills || 0).toLocaleString('pt-BR')} kills · ${Number(entry.xp || 0).toLocaleString('pt-BR')} XP · ${entry.captures || 0} capturas · ${entry.shiny || 0} shiny${entry.gph ? ` · ${Number(entry.gph).toLocaleString('pt-BR')} gold/h` : ''}`;
     const date = document.createElement('time'); date.className = 'history-date'; date.dateTime = new Date(entry.finishedAt).toISOString(); date.textContent = new Date(entry.finishedAt).toLocaleString('pt-BR');
     row.append(title, stats, date); return row;
   }));
