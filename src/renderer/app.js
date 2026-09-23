@@ -31,6 +31,7 @@ function render() {
 
 function setAuthStatus(status) {
   const label = $('#licenseLabel');
+  $('#logoutButton').hidden = !status?.ok;
   if (!status?.ok) { label.textContent = status?.reason === 'auth_server_not_configured' ? 'Servidor não configurado' : 'Licença não verificada'; label.className = 'license-badge'; return; }
   label.textContent = status.offlineGrace ? 'Licença offline · grace' : `Plano ${status.plan || 'ativo'}`;
   label.className = 'license-badge active';
@@ -100,6 +101,12 @@ $('#loginButton').addEventListener('click', openAuthModal);
 $('#emptyLoginButton').addEventListener('click', addAccount);
 $('#manageAccountsButton').addEventListener('click', addAccount);
 $('#refreshButton').addEventListener('click', render);
+$('#logoutButton').addEventListener('click', async () => {
+  const result = await window.darkGridAPI.authLogout();
+  if (!result?.ok) { $('#connectionLabel').textContent = 'Falha ao sair'; return; }
+  for (const account of state.accounts) await window.darkGridAPI.removeAccount(account.id);
+  state.accounts = []; state.auth = { ok: false, reason: 'auth_required' }; setAuthStatus(state.auth); render();
+});
 $('#authClose').addEventListener('click', closeAuthModal);
 $('#authModal').addEventListener('click', (event) => { if (event.target.id === 'authModal') closeAuthModal(); });
 $('#authForm').addEventListener('submit', async (event) => {
