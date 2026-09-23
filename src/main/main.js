@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, WebContentsView, ipcMain, safeStorage, session, shell, dialog, Notification } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, safeStorage, session, shell, dialog, Notification, Tray, Menu, nativeImage } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
@@ -24,10 +24,26 @@ const accountPollers = new Map();
 let authRuntime;
 let huntHistory;
 let alertEngine;
+let tray;
+let isQuitting = false;
 const rendererUrl = trustedUiUrl(path.join(__dirname, '../renderer/index.html'));
 
 function isTrustedUi(event) {
   try { return isTrustedUiUrl(event.senderFrame?.url, rendererUrl); } catch { return false; }
+}
+
+function createTray() {
+  if (tray) return;
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32" rx="8" fill="#7c8cff"/><path d="M9 23V9h5l2 3 2-3h5v14h-4v-8l-3 4-3-4v8z" fill="#080b12"/></svg>';
+  const icon = nativeImage.createFromDataURL(`data:image/svg+xml,${encodeURIComponent(svg)}`);
+  tray = new Tray(icon);
+  tray.setToolTip('DarkGrid');
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: 'Mostrar DarkGrid', click: () => { mainWindow?.show(); mainWindow?.focus(); } },
+    { type: 'separator' },
+    { label: 'Sair', click: () => { isQuitting = true; app.quit(); } }
+  ]));
+  tray.on('click', () => { if (mainWindow?.isVisible()) mainWindow.hide(); else { mainWindow?.show(); mainWindow?.focus(); } });
 }
 
 function credentialsPath() { return path.join(app.getPath('userData'), 'credentials.enc'); }
@@ -126,6 +142,7 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+  mainWindow.on('close', (event) => { if (!isQuitting) { event.preventDefault(); mainWindow.hide(); } });
   mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     try { shell.openExternal(url); } catch {}
@@ -224,7 +241,9 @@ app.whenReady().then(() => {
     try { session.fromPartition(`persist:darkgrid-account-${i}`).setPermissionRequestHandler((_wc, _permission, callback) => callback(false)); } catch {}
   }
   createWindow();
+  createTray();
 });
 
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('before-quit', () => { try { gameViews?.destroy(); } catch {} });
+app.on('activate', () => { mainWindow?.show(); mainWindow?.focus(); });
+app.on('window-all-closed', () => { if (process.platform !== 'darwin' && !tray) app.quit(); });
+app.on('before-quit', () => { isQuitting = true; try { gameViews?.destroy(); } catch {} try { tray?.destroy(); } catch {} });
