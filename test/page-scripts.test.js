@@ -21,6 +21,7 @@ for (const script of [DETECT_GAME_LOGIN_SCRIPT, FILL_GAME_LOGIN_SCRIPT({ usernam
 assert.doesNotThrow(() => new Function(READ_DEPOT_SCRIPT), 'depot script deve ser JavaScript válido');
 assert.doesNotThrow(() => new Function(READ_POKEMON_SCRIPT), 'pokemon script deve ser JavaScript válido');
 assert.doesNotThrow(() => new Function(READ_HUNTS_SCRIPT), 'hunt script deve ser JavaScript válido');
+assert.match(READ_HUNTS_SCRIPT, /\/api\/game\/map-markers/);
 for (const script of [BUY_BALLS_SCRIPT({ ballId: 1, quantity: 10 }), SELL_ITEMS_SCRIPT([{ itemId: 1, qty: 2 }]), SELL_POKEMON_SCRIPT(['poke-1']), SELL_STONE_SCRIPT({ itemId: 1, quantity: 1 })]) assert.doesNotThrow(() => new Function(script), 'operation script deve ser JavaScript válido');
 assert.match(BOOTSTRAP_SCRIPT, /__darkGrid/);
 assert.match(READ_STATE_SCRIPT, /collectorVersion/);
