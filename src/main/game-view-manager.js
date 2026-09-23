@@ -20,7 +20,8 @@ class GameViewManager extends EventEmitter {
     if (this.views.has(id)) return { ok: true, id, existing: true };
     const partition = `persist:darkgrid-account-${id}`;
     try { this.session?.fromPartition(partition).setPermissionRequestHandler((_wc, _permission, callback) => callback(false)); } catch {}
-    const view = new this.WebContentsView({ webPreferences: { partition, contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: true } });
+    // O farm continua rodando quando o painel fica oculto ou o app é minimizado.
+    const view = new this.WebContentsView({ webPreferences: { partition, contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false } });
     this.window.contentView.addChildView(view);
     view.setVisible(false);
     view.setBackgroundColor('#080b12');

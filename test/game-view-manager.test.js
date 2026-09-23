@@ -13,7 +13,7 @@ class FakeContents extends EventEmitter {
   reload() { this.reloaded = true; }
 }
 class FakeView {
-  constructor() { this.webContents = new FakeContents(); this.visible = false; this.bounds = null; }
+  constructor(options) { this.options = options; this.webContents = new FakeContents(); this.visible = false; this.bounds = null; }
   setVisible(value) { this.visible = value; }
   setBackgroundColor(value) { this.background = value; }
   setBounds(value) { this.bounds = value; }
@@ -22,6 +22,7 @@ class FakeView {
 const parent = { contentView: { children: [], addChildView(view) { this.children.push(view); }, removeChildView(view) { this.children = this.children.filter((item) => item !== view); } } };
 const manager = new GameViewManager({ window: parent, WebContentsView: FakeView, gameOrigin: 'https://poke.idleworld.online' });
 assert.equal(manager.add({ id: 'account-a', slot: 0 }).ok, true);
+assert.equal(parent.contentView.children[0].options.webPreferences.backgroundThrottling, false);
 assert.equal(manager.add({ id: 'account-a', slot: 0 }).existing, true);
 assert.equal(manager.open('account-a').ok, true);
 assert.equal(parent.contentView.children[0].visible, true);
