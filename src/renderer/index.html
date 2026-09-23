@@ -106,6 +106,20 @@
       <div class="team-list" id="teamList"><p class="history-empty">Equipe ainda não carregada.</p></div>
     </section>
   </div>
+  <div class="modal-backdrop" id="huntModal" hidden>
+    <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="huntTitle">
+      <button class="modal-close" id="huntClose" aria-label="Fechar">×</button>
+      <p class="eyebrow">NAVEGAÇÃO DA CONTA</p>
+      <h2 id="huntTitle">Ir para uma hunt</h2>
+      <p class="modal-copy" id="huntAccountLabel">Conta selecionada</p>
+      <form id="huntForm">
+        <label>Slug da hunt<input id="huntSlug" type="text" maxlength="100" required placeholder="route-1"></label>
+        <label>Nome exibido<input id="huntName" type="text" maxlength="100" placeholder="Route 1"></label>
+        <p class="form-error" id="huntError" role="alert"></p>
+        <button class="primary-button full-width" type="submit">Viajar e confirmar</button>
+      </form>
+    </section>
+  </div>
   <div class="alert-toasts" id="alertToasts" aria-live="polite" aria-atomic="false"></div>
   <script src="./app.js"></script>
 </body>
