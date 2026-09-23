@@ -139,4 +139,13 @@ document.querySelectorAll('.nav-item').forEach((button) => button.addEventListen
   button.classList.add('active');
 }));
 
-Promise.all([window.darkGridAPI.authStatus(), restoreAccounts()]).then(([status]) => { state.auth = status || { ok: false }; setAuthStatus(state.auth); render(); }).catch(() => render());
+async function bootstrap() {
+  try {
+    state.auth = await window.darkGridAPI.authStatus() || { ok: false };
+    setAuthStatus(state.auth);
+    if (state.auth.ok) await restoreAccounts();
+    else render();
+  } catch { state.auth = { ok: false, reason: 'auth_required' }; setAuthStatus(state.auth); render(); }
+}
+
+bootstrap();
