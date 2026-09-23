@@ -2,6 +2,8 @@
 
 const { EventEmitter } = require('node:events');
 const { BOOTSTRAP_SCRIPT, READ_STATE_SCRIPT, OPEN_MARKET_SCRIPT, OPEN_DEPOT_SCRIPT, TRAVEL_SCRIPT } = require('./page-scripts');
+const { BUY_BALLS_SCRIPT, SELL_ITEMS_SCRIPT, SELL_POKEMON_SCRIPT, SELL_STONE_SCRIPT } = require('./operation-scripts');
+const { selectSellableItems, selectSellablePokemon } = require('./sell-policy');
 
 const VALID_STATUSES = new Set(['online', 'stale', 'login_required']);
 
@@ -25,6 +27,10 @@ class GameAdapter extends EventEmitter {
   openMarket() { return this.#action(OPEN_MARKET_SCRIPT); }
   openDepot() { return this.#action(OPEN_DEPOT_SCRIPT); }
   travelToHunt({ slug, name }) { return this.#action(TRAVEL_SCRIPT(slug, name)); }
+  buyBalls(input) { return this.#action(BUY_BALLS_SCRIPT(input || {})); }
+  sellItems(input) { const items = Array.isArray(input) ? input : input?.items; const protectedIds = Array.isArray(input?.protectedIds) ? input.protectedIds : []; return this.#action(SELL_ITEMS_SCRIPT(selectSellableItems(items, protectedIds))); }
+  sellPokemon(pokemon) { return this.#action(SELL_POKEMON_SCRIPT(selectSellablePokemon(pokemon))); }
+  sellStone(input) { return this.#action(SELL_STONE_SCRIPT(input || {})); }
 
   #action(script) { return this.#run(async () => { const result = await this.#execute(script); if (!result || typeof result !== 'object' || typeof result.ok !== 'boolean') throw error('INVALID_ACTION_RESULT', 'O jogo devolveu um resultado de ação inválido'); return { ...result, accountId: this.accountId }; }); }
   #run(task) { return this.queue.run(async () => { try { return await task(); } catch (cause) { if (cause?.code) throw cause; throw error('SURFACE_EXECUTION_FAILED', cause?.message || 'Falha ao executar ação no painel', cause); } }); }
