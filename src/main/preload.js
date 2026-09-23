@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('darkGridAPI', {
   setAccountLayout: (layout) => ipcRenderer.invoke('account:layout', layout),
   getAccountState: (id) => ipcRenderer.invoke('account:state', id),
   accountAction: (id, action, input) => ipcRenderer.invoke('account:action', id, action, input),
+  onAccountState: (callback) => ipcRenderer.on('account:state-updated', (_event, payload) => callback(payload)),
   onAccountStatus: (callback) => ipcRenderer.on('account:status', (_event, payload) => callback(payload)),
   onAccountCreated: (callback) => ipcRenderer.on('account:created', (_event, payload) => callback(payload)),
   onAccountRemoved: (callback) => ipcRenderer.on('account:removed', (_event, payload) => callback(payload))

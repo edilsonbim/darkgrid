@@ -3,7 +3,7 @@
 const { EventEmitter } = require('node:events');
 const { BOOTSTRAP_SCRIPT, READ_STATE_SCRIPT, OPEN_MARKET_SCRIPT, OPEN_DEPOT_SCRIPT, TRAVEL_SCRIPT } = require('./page-scripts');
 
-const VALID_STATUSES = new Set(['online', 'stale']);
+const VALID_STATUSES = new Set(['online', 'stale', 'login_required']);
 
 function error(code, message, cause) { const result = new Error(message); result.code = code; if (cause) result.cause = cause; return result; }
 function allowedOrigin(url, expected) { try { return new URL(url).origin === new URL(expected).origin; } catch { return false; } }

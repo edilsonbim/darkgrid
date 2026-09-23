@@ -2,7 +2,7 @@
 
 const state = { accounts: [], busy: false };
 const $ = (selector) => document.querySelector(selector);
-const statusLabels = { loading: 'Carregando jogo', login_required: 'Login necessário', online: 'Online', offline: 'Offline', error: 'Erro no painel' };
+const statusLabels = { loading: 'Carregando jogo', login_required: 'Login necessário', online: 'Online', stale: 'Sem atividade recente', offline: 'Offline', error: 'Erro no painel' };
 
 function render() {
   const grid = $('#accountsGrid');
@@ -56,6 +56,7 @@ $('#manageAccountsButton').addEventListener('click', addAccount);
 $('#refreshButton').addEventListener('click', render);
 window.addEventListener('resize', syncLayout);
 window.darkGridAPI.onAccountStatus((payload) => { const account = state.accounts.find((item) => item.id === payload.id); if (account) { account.status = payload.status; render(); } });
+window.darkGridAPI.onAccountState((payload) => { const account = state.accounts.find((item) => item.id === payload.accountId); const snapshot = payload.state; if (account && snapshot) { account.status = snapshot.status; account.name = snapshot.name || account.name; account.hunt = snapshot.hunt?.name || snapshot.hunt?.slug || 'Sem hunt'; render(); } });
 document.querySelectorAll('.nav-item').forEach((button) => button.addEventListener('click', () => {
   document.querySelectorAll('.nav-item').forEach((item) => item.classList.remove('active'));
   button.classList.add('active');

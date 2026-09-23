@@ -6,10 +6,12 @@ const fs = require('node:fs');
 const { GAME_ORIGIN, MAX_ACCOUNTS } = require('../shared/constants');
 const { GameViewManager } = require('./game-view-manager');
 const { GameAdapter } = require('../game/game-adapter');
+const { AccountStatePoller } = require('./account-state-poller');
 
 let mainWindow;
 let gameViews;
 const gameAdapters = new Map();
+const accountPollers = new Map();
 
 function isTrustedUi(event) {
   try { return String(event.senderFrame?.url || '').startsWith('file://'); } catch { return false; }
@@ -56,9 +58,9 @@ function createWindow() {
   });
   gameViews = new GameViewManager({ window: mainWindow, WebContentsView, session, gameOrigin: GAME_ORIGIN, maxAccounts: MAX_ACCOUNTS, openExternal: (url) => { try { shell.openExternal(url); } catch {} } });
   gameViews.on('status', (payload) => mainWindow.webContents.send('account:status', payload));
-  gameViews.on('created', (payload) => { const surface = gameViews.getSurface(payload.id); if (surface) gameAdapters.set(payload.id, new GameAdapter({ accountId: payload.id, surface, allowedOrigin: GAME_ORIGIN })); mainWindow.webContents.send('account:created', payload); });
+  gameViews.on('created', (payload) => { const surface = gameViews.getSurface(payload.id); if (surface) { const adapter = new GameAdapter({ accountId: payload.id, surface, allowedOrigin: GAME_ORIGIN }); gameAdapters.set(payload.id, adapter); const poller = new AccountStatePoller({ accountId: payload.id, adapter }); poller.on('state', (state) => mainWindow.webContents.send('account:state-updated', state)); poller.on('error', (error) => mainWindow.webContents.send('account:state-error', error)); accountPollers.set(payload.id, poller); poller.start(); } mainWindow.webContents.send('account:created', payload); });
   gameViews.on('status', (payload) => { if (payload.status === 'login_required') gameAdapters.get(payload.id)?.bootstrap().catch(() => {}); });
-  gameViews.on('removed', (payload) => { gameAdapters.delete(payload.id); mainWindow.webContents.send('account:removed', payload); });
+  gameViews.on('removed', (payload) => { accountPollers.get(payload.id)?.dispose(); accountPollers.delete(payload.id); gameAdapters.delete(payload.id); mainWindow.webContents.send('account:removed', payload); });
 }
 
 ipcMain.handle('app:info', (event) => isTrustedUi(event) ? ({ version: app.getVersion(), platform: process.platform }) : null);
