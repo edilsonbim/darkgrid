@@ -4,6 +4,7 @@ const { EventEmitter } = require('node:events');
 const { BOOTSTRAP_SCRIPT, READ_STATE_SCRIPT, OPEN_MARKET_SCRIPT, OPEN_DEPOT_SCRIPT } = require('./page-scripts');
 const { travelScript } = require('./travel-script');
 const { returnHuntScript } = require('./return-hunt-script');
+const { GO_TOWN_SCRIPT } = require('./town-script');
 const { BUY_BALLS_SCRIPT, SELL_ITEMS_SCRIPT, SELL_POKEMON_SCRIPT, SELL_STONE_SCRIPT } = require('./operation-scripts');
 const { selectSellableItems, selectSellablePokemon } = require('./sell-policy');
 
@@ -21,7 +22,7 @@ class GameAdapter extends EventEmitter {
   constructor({ accountId, surface, allowedOrigin, executionTimeoutMs = 10000 }) {
     super();
     if (!accountId || !surface || !allowedOrigin) throw new TypeError('GameAdapter requer accountId, surface e allowedOrigin');
-    this.accountId = String(accountId); this.surface = surface; this.allowedOrigin = allowedOrigin; this.executionTimeoutMs = executionTimeoutMs; this.queue = new SerialQueue(); this.bootstrapped = false;
+    this.accountId = String(accountId); this.surface = surface; this.allowedOrigin = allowedOrigin; this.executionTimeoutMs = executionTimeoutMs; this.queue = new SerialQueue(); this.bootstrapped = false; this.lastHunt = null;
   }
 
   bootstrap() { return this.#run(() => this.#execute(BOOTSTRAP_SCRIPT)).then((result) => { if (!result?.ok) throw error('BOOTSTRAP_FAILED', 'Coletor do jogo não foi inicializado'); this.bootstrapped = true; return result; }); }
@@ -30,12 +31,14 @@ class GameAdapter extends EventEmitter {
   openDepot() { return this.#action(OPEN_DEPOT_SCRIPT); }
   travelToHunt({ slug, name }) { return this.#action(travelScript(slug, name)); }
   returnToLastHunt(input) { return this.#action(returnHuntScript(input || {})); }
-  buyBalls(input) { return this.#action(BUY_BALLS_SCRIPT(input || {})); }
-  sellItems(input) { const items = Array.isArray(input) ? input : input?.items; const protectedIds = Array.isArray(input?.protectedIds) ? input.protectedIds : []; return this.#action(SELL_ITEMS_SCRIPT(selectSellableItems(items, protectedIds))); }
-  sellPokemon(pokemon) { return this.#action(SELL_POKEMON_SCRIPT(selectSellablePokemon(pokemon))); }
-  sellStone(input) { return this.#action(SELL_STONE_SCRIPT(input || {})); }
+  buyBalls(input) { return this.#actionWithTown(BUY_BALLS_SCRIPT(input || {})); }
+  sellItems(input) { const items = Array.isArray(input) ? input : input?.items; const protectedIds = Array.isArray(input?.protectedIds) ? input.protectedIds : []; return this.#actionWithTown(SELL_ITEMS_SCRIPT(selectSellableItems(items, protectedIds))); }
+  sellPokemon(pokemon) { return this.#actionWithTown(SELL_POKEMON_SCRIPT(selectSellablePokemon(pokemon))); }
+  sellStone(input) { return this.#actionWithTown(SELL_STONE_SCRIPT(input || {})); }
 
-  #action(script) { return this.#run(async () => { const result = await this.#execute(script); if (!result || typeof result !== 'object' || typeof result.ok !== 'boolean') throw error('INVALID_ACTION_RESULT', 'O jogo devolveu um resultado de ação inválido'); return { ...result, accountId: this.accountId }; }); }
+  #action(script) { return this.#run(async () => ({ ...this.#validateActionResult(await this.#execute(script)), accountId: this.accountId })); }
+  #actionWithTown(script) { return this.#run(async () => { const first = this.#validateActionResult(await this.#execute(script)); if (!first.requiresTown) return { ...first, accountId: this.accountId }; const town = this.#validateActionResult(await this.#execute(GO_TOWN_SCRIPT)); if (!town.ok) return { ...first, ok: false, reason: town.reason || 'town_not_confirmed', town, accountId: this.accountId }; const retry = this.#validateActionResult(await this.#execute(script)); if (!retry.ok) return { ...retry, town, accountId: this.accountId }; let returned = { ok: true, skipped: true }; if (this.lastHunt?.slug) returned = this.#validateActionResult(await this.#execute(returnHuntScript(this.lastHunt))); return { ...retry, ok: returned.ok, town, returned, accountId: this.accountId }; }); }
+  #validateActionResult(result) { if (!result || typeof result !== 'object' || typeof result.ok !== 'boolean') throw error('INVALID_ACTION_RESULT', 'O jogo devolveu um resultado de ação inválido'); return result; }
   #run(task) { return this.queue.run(async () => { try { return await task(); } catch (cause) { if (cause?.code) throw cause; throw error('SURFACE_EXECUTION_FAILED', cause?.message || 'Falha ao executar ação no painel', cause); } }); }
   async #execute(script) {
     if (typeof this.surface.isDestroyed === 'function' && this.surface.isDestroyed()) throw error('SURFACE_DESTROYED', 'O painel da conta foi destruído');
@@ -50,7 +53,9 @@ class GameAdapter extends EventEmitter {
   #normalizeState(raw) {
     if (!raw || typeof raw !== 'object' || raw.ok !== true || !VALID_STATUSES.has(raw.status)) throw error('INVALID_GAME_STATE', 'Estado do jogo inválido ou incompatível');
     const n = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
-    return { accountId: this.accountId, status: raw.status, hunt: raw.huntSlug ? { slug: String(raw.huntSlug), name: String(raw.huntSlug).replace(/[_-]+/g, ' ') } : null, level: n(raw.level), gold: n(raw.gold), balls: Math.max(0, n(raw.balls)), metrics: raw.metrics && typeof raw.metrics === 'object' ? { kills: Math.max(0, n(raw.metrics.kills)), xp: Math.max(0, n(raw.metrics.xp)), captures: Math.max(0, n(raw.metrics.captures)), shiny: Math.max(0, n(raw.metrics.shiny)), xph: Math.max(0, n(raw.metrics.xph)), kph: Math.max(0, n(raw.metrics.kph)), seconds: Math.max(0, n(raw.metrics.seconds)) } : {}, updatedAt: Date.now() };
+    const hunt = raw.huntSlug ? { slug: String(raw.huntSlug), name: String(raw.huntSlug).replace(/[_-]+/g, ' ') } : null;
+    if (hunt) this.lastHunt = hunt;
+    return { accountId: this.accountId, status: raw.status, hunt, level: n(raw.level), gold: n(raw.gold), balls: Math.max(0, n(raw.balls)), metrics: raw.metrics && typeof raw.metrics === 'object' ? { kills: Math.max(0, n(raw.metrics.kills)), xp: Math.max(0, n(raw.metrics.xp)), captures: Math.max(0, n(raw.metrics.captures)), shiny: Math.max(0, n(raw.metrics.shiny)), xph: Math.max(0, n(raw.metrics.xph)), kph: Math.max(0, n(raw.metrics.kph)), seconds: Math.max(0, n(raw.metrics.seconds)) } : {}, updatedAt: Date.now() };
   }
 }
 
