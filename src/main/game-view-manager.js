@@ -39,6 +39,7 @@ class GameViewManager extends EventEmitter {
     record.view.setVisible(true);
     this.#applyBounds(record);
     record.view.webContents.focus();
+    this.#setStatus(record, 'opened');
     return { ok: true };
   }
 
@@ -46,6 +47,7 @@ class GameViewManager extends EventEmitter {
     const record = this.views.get(id);
     if (!record) return { ok: false, reason: 'account_not_found' };
     record.view.setVisible(false);
+    this.#setStatus(record, 'closed');
     return { ok: true };
   }
 
