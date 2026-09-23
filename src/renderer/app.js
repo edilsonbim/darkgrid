@@ -2,7 +2,7 @@
 
 const state = { accounts: [], busy: false, auth: { ok: false } };
 const $ = (selector) => document.querySelector(selector);
-const statusLabels = { loading: 'Carregando jogo', login_required: 'Login necessário', online: 'Online', stale: 'Sem atividade recente', offline: 'Offline', error: 'Erro no painel' };
+const statusLabels = { loading: 'Carregando jogo', login_required: 'Login necessário', online: 'Online', stale: 'Sem atividade recente', offline: 'Offline', error: 'Erro no painel', opened: 'Painel aberto', closed: 'Painel oculto' };
 
 function render() {
   const grid = $('#accountsGrid');
@@ -12,11 +12,18 @@ function render() {
     const name = document.createElement('div'); name.className = 'account-name';
     const avatar = document.createElement('span'); avatar.className = 'account-avatar'; avatar.textContent = String(index + 1);
     const details = document.createElement('div'); const title = document.createElement('strong'); title.textContent = account.name || `Conta ${index + 1}`;
-    const hunt = document.createElement('small'); hunt.textContent = account.hunt || 'Sessão não iniciada'; details.append(title, hunt); name.append(avatar, details);
+    const hunt = document.createElement('small'); hunt.textContent = account.hunt || 'Sessão não iniciada';
+    const stats = document.createElement('small'); stats.className = 'account-stats'; stats.textContent = account.level ? `Nível ${account.level} · ${account.gold || 0} gold` : 'Estado aguardando leitura';
+    details.append(title, hunt, stats); name.append(avatar, details);
     const actions = document.createElement('div'); actions.className = 'account-actions';
     const status = document.createElement('span'); status.className = 'account-status'; status.textContent = statusLabels[account.status] || account.status || 'Desconectada';
     const open = document.createElement('button'); open.className = 'mini-button'; open.textContent = 'Abrir'; open.addEventListener('click', () => openAccount(account));
-    actions.append(status, open); card.append(name, actions); return card;
+    const actionBar = document.createElement('div'); actionBar.className = 'account-action-bar';
+    for (const [label, action] of [['Market', 'openMarket'], ['Depot', 'openDepot'], ['Atualizar', 'refresh']]) {
+      const button = document.createElement('button'); button.className = 'mini-button'; button.textContent = label; button.disabled = Boolean(account.actionBusy);
+      button.addEventListener('click', () => action === 'refresh' ? refreshAccount(account) : runAccountAction(account, action)); actionBar.append(button);
+    }
+    actions.append(status, open); card.append(name, actions, actionBar); return card;
   }));
   $('#emptyState').style.display = state.accounts.length ? 'none' : 'grid';
 }
@@ -59,6 +66,30 @@ async function restoreAccounts() {
 }
 
 async function openAccount(account) { await window.darkGridAPI.openAccount(account.id); syncLayout(); }
+async function refreshAccount(account) {
+  if (account.actionBusy) return;
+  account.actionBusy = true; render();
+  try {
+    const response = await window.darkGridAPI.getAccountState(account.id);
+    if (!response?.ok) throw new Error(response?.reason || 'state_failed');
+    applySnapshot(account, response.state);
+  } catch (cause) { account.status = 'error'; account.error = cause.message; }
+  finally { account.actionBusy = false; render(); }
+}
+async function runAccountAction(account, action) {
+  if (account.actionBusy) return;
+  account.actionBusy = true; render();
+  try {
+    const response = await window.darkGridAPI.accountAction(account.id, action, {});
+    if (!response?.ok || !response.result?.ok) throw new Error(response?.reason || response?.result?.reason || 'action_failed');
+    account.status = 'online';
+  } catch (cause) { account.status = cause.message === 'game_auth_required' ? 'login_required' : 'error'; account.error = cause.message; }
+  finally { account.actionBusy = false; render(); }
+}
+function applySnapshot(account, snapshot) {
+  if (!snapshot) return;
+  account.status = snapshot.status; account.name = snapshot.name || account.name; account.hunt = snapshot.hunt?.name || snapshot.hunt?.slug || 'Sem hunt'; account.level = snapshot.level; account.gold = snapshot.gold;
+}
 function syncLayout() { window.darkGridAPI.setAccountLayout({ x: 250, y: 112, width: Math.max(500, window.innerWidth - 270), height: Math.max(400, window.innerHeight - 135) }); }
 
 $('#loginButton').addEventListener('click', openAuthModal);
@@ -84,7 +115,7 @@ $('#authForm').addEventListener('submit', async (event) => {
 });
 window.addEventListener('resize', syncLayout);
 window.darkGridAPI.onAccountStatus((payload) => { const account = state.accounts.find((item) => item.id === payload.id); if (account) { account.status = payload.status; render(); } });
-window.darkGridAPI.onAccountState((payload) => { const account = state.accounts.find((item) => item.id === payload.accountId); const snapshot = payload.state; if (account && snapshot) { account.status = snapshot.status; account.name = snapshot.name || account.name; account.hunt = snapshot.hunt?.name || snapshot.hunt?.slug || 'Sem hunt'; render(); } });
+window.darkGridAPI.onAccountState((payload) => { const account = state.accounts.find((item) => item.id === payload.accountId); if (account) { applySnapshot(account, payload.state); render(); } });
 document.querySelectorAll('.nav-item').forEach((button) => button.addEventListener('click', () => {
   document.querySelectorAll('.nav-item').forEach((item) => item.classList.remove('active'));
   button.classList.add('active');
