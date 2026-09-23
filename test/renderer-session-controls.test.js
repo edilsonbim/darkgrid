@@ -18,6 +18,7 @@ assert.match(html, /id="loadDepotButton"/);
 assert.match(html, /id="teamModal"/);
 assert.match(app, /authLogout\(\)/);
 assert.match(app, /removeAccount\(account\.id\)/);
+assert.match(app, /Remover .* do DarkGrid/);
 assert.match(app, /accountAction\(account\.id, action/);
 assert.match(app, /loadHuntHistory\(\)/);
 assert.match(app, /saveAlertConfig/);

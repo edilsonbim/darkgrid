@@ -35,12 +35,13 @@ function render() {
     const actions = document.createElement('div'); actions.className = 'account-actions';
     const status = document.createElement('span'); status.className = 'account-status'; status.textContent = statusLabels[account.status] || account.status || 'Desconectada';
     const open = document.createElement('button'); open.className = 'mini-button'; open.textContent = 'Abrir'; open.addEventListener('click', () => openAccount(account));
+    const remove = document.createElement('button'); remove.className = 'mini-button danger-button'; remove.textContent = 'Remover'; remove.disabled = Boolean(account.actionBusy); remove.addEventListener('click', () => removeAccount(account));
     const actionBar = document.createElement('div'); actionBar.className = 'account-action-bar';
     for (const [label, action] of [['Login', 'gameLogin'], ['Market', 'openMarket'], ['Depot', 'openDepot'], ['Equipe', 'team'], ['Inventário', 'inventory'], ['Operações', 'operations'], ['Retornar', 'returnToLastHunt'], ['Atualizar', 'refresh']]) {
       const button = document.createElement('button'); button.className = 'mini-button'; button.textContent = label; button.disabled = Boolean(account.actionBusy);
       button.addEventListener('click', () => action === 'refresh' ? refreshAccount(account) : action === 'gameLogin' ? openGameLogin(account) : action === 'inventory' ? openInventory(account) : action === 'team' ? openTeam(account) : action === 'operations' ? openOperations(account) : runAccountAction(account, action, action === 'returnToLastHunt' ? { slug: account.huntSlug, name: account.hunt } : {})); actionBar.append(button);
     }
-    actions.append(status, open); card.append(name, actions, actionBar); return card;
+    actions.append(status, open, remove); card.append(name, actions, actionBar); return card;
   }));
   $('#emptyState').style.display = state.accounts.length ? 'none' : 'grid';
   const history = $('#historyList');
@@ -112,6 +113,20 @@ async function addAccount() {
   if (!result?.ok) { $('#connectionLabel').textContent = 'Falha ao criar painel'; return; }
   state.accounts.push(account);
   await saveProfiles();
+  render();
+}
+
+async function removeAccount(account) {
+  if (account.actionBusy || !window.confirm(`Remover ${account.name || 'esta conta'} do DarkGrid? O perfil local será removido, mas nada será alterado no jogo.`)) return;
+  account.actionBusy = true; render();
+  try {
+    const result = await window.darkGridAPI.removeAccount(account.id);
+    if (!result?.ok) throw new Error(result?.reason || 'remove_failed');
+    state.accounts = state.accounts.filter((item) => item.id !== account.id);
+    await saveProfiles();
+  } catch (cause) {
+    account.actionBusy = false; account.status = 'error'; account.error = cause.message;
+  }
   render();
 }
 
