@@ -4,7 +4,7 @@ Novo aplicativo independente para gerenciamento de múltiplas contas e farm, com
 
 ## Estado atual
 
-A V1 já possui shell Electron, interface escura, até quatro sessões isoladas, polling de estado, métricas de farm, Hunt Analyzer com preferência por dados do servidor, tierlist modular estimada, equipe sanitizada por conta, inventário sanitizado por conta, histórico local de hunts encerradas, exportação CSV, alertas configuráveis de queda/sem progresso/sem Pokébolas, login da conta do jogo com Turnstile manual, Market/Depot, compra/venda protegida, recuperação cidade → operação → hunt e licenciamento assinado. Os contratos privados do jogo ainda precisam de validação com uma conta real antes de serem tratados como compatibilidade de produção.
+A V1 já possui shell Electron, interface escura, até quatro sessões isoladas, modo leve que oculta os painéis sem interromper o farm, polling de estado, métricas de farm, Hunt Analyzer com preferência por dados do servidor, tierlist modular estimada, equipe sanitizada por conta, inventário sanitizado por conta, histórico local de hunts encerradas, exportação CSV, alertas configuráveis de queda/sem progresso/sem Pokébolas, login da conta do jogo com Turnstile manual, Market/Depot, compra/venda protegida, recuperação cidade → operação → hunt e licenciamento assinado. Os contratos privados do jogo ainda precisam de validação com uma conta real antes de serem tratados como compatibilidade de produção.
 
 ## Executar
 

@@ -52,6 +52,12 @@ class GameViewManager extends EventEmitter {
     return { ok: true };
   }
 
+  setVisibleAll(visible) {
+    const next = Boolean(visible);
+    for (const record of this.views.values()) record.view.setVisible(next);
+    return true;
+  }
+
   remove(id) {
     const record = this.views.get(id);
     if (!record) return { ok: false, reason: 'account_not_found' };

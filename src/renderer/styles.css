@@ -1,4 +1,8 @@
 :root { color-scheme: dark; --bg:#080b12; --surface:#101621; --surface-2:#151d2a; --line:#263244; --text:#edf2f7; --muted:#8492a6; --accent:#7c8cff; --accent-2:#55d6be; }
+body.compact-mode .main-content { max-width:1100px; margin:0 auto; }
+body.compact-mode .summary-grid { grid-template-columns:repeat(3,1fr); }
+body.compact-mode .account-card { min-height:108px; }
+body.compact-mode #compactButton { border-color:rgba(85,214,190,.55); color:var(--accent-2); }
 * { box-sizing:border-box; }
 body { margin:0; min-width:1050px; min-height:650px; background:var(--bg); color:var(--text); font:14px/1.45 Inter,Segoe UI,sans-serif; }
 button { border:0; color:inherit; cursor:pointer; font:inherit; }

@@ -1,6 +1,7 @@
 'use strict';
 
 const state = { accounts: [], history: [], alerts: {}, credentials: {}, busy: false, auth: { ok: false } };
+let compactMode = false;
 let gameLoginAccount = null;
 let operationsAccount = null;
 let inventoryAccount = null;
@@ -151,7 +152,7 @@ async function restoreAccounts() {
   render();
 }
 
-async function openAccount(account) { await window.darkGridAPI.openAccount(account.id); syncLayout(); }
+async function openAccount(account) { if (compactMode) await setCompactMode(false); await window.darkGridAPI.openAccount(account.id); syncLayout(); }
 async function refreshAccount(account) {
   if (account.actionBusy) return;
   account.actionBusy = true; render();
@@ -177,11 +178,21 @@ function applySnapshot(account, snapshot) {
   account.status = snapshot.status; account.name = snapshot.name || account.name; account.hunt = snapshot.hunt?.name || snapshot.hunt?.slug || 'Sem hunt'; account.huntSlug = snapshot.hunt?.slug || account.huntSlug || ''; account.level = snapshot.level; account.gold = snapshot.gold; account.metrics = snapshot.metrics || account.metrics || {}; account.analyzer = snapshot.analyzer || account.analyzer || null; account.drops = snapshot.drops || account.drops || [];
 }
 function syncLayout() { window.darkGridAPI.setAccountLayout({ x: 250, y: 112, width: Math.max(500, window.innerWidth - 270), height: Math.max(400, window.innerHeight - 135) }); }
+async function setCompactMode(enabled) {
+  compactMode = Boolean(enabled);
+  document.body.classList.toggle('compact-mode', compactMode);
+  const button = $('#compactButton');
+  button.setAttribute('aria-pressed', String(compactMode));
+  button.textContent = compactMode ? 'Mostrar jogo' : 'Modo leve';
+  await window.darkGridAPI.setAccountsVisible(!compactMode);
+  if (!compactMode) syncLayout();
+}
 
 $('#loginButton').addEventListener('click', openAuthModal);
 $('#emptyLoginButton').addEventListener('click', addAccount);
 $('#manageAccountsButton').addEventListener('click', addAccount);
 $('#refreshButton').addEventListener('click', render);
+$('#compactButton').addEventListener('click', () => setCompactMode(!compactMode));
 $('#exportHistoryButton').addEventListener('click', async () => { const result = await window.darkGridAPI.exportHuntHistory(); $('#historyExportStatus').textContent = result?.ok ? `Histórico exportado: ${result.filePath}` : result?.canceled ? '' : 'Não foi possível exportar o histórico'; });
 $('#logoutButton').addEventListener('click', async () => {
   const result = await window.darkGridAPI.authLogout();
