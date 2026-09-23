@@ -150,6 +150,7 @@ $('#loginButton').addEventListener('click', openAuthModal);
 $('#emptyLoginButton').addEventListener('click', addAccount);
 $('#manageAccountsButton').addEventListener('click', addAccount);
 $('#refreshButton').addEventListener('click', render);
+$('#exportHistoryButton').addEventListener('click', async () => { const result = await window.darkGridAPI.exportHuntHistory(); $('#historyExportStatus').textContent = result?.ok ? `Histórico exportado: ${result.filePath}` : result?.canceled ? '' : 'Não foi possível exportar o histórico'; });
 $('#logoutButton').addEventListener('click', async () => {
   const result = await window.darkGridAPI.authLogout();
   if (!result?.ok) { $('#connectionLabel').textContent = 'Falha ao sair'; return; }

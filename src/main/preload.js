@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('darkGridAPI', {
   loadProfiles: () => ipcRenderer.invoke('profiles:load'),
   saveProfiles: (profiles) => ipcRenderer.invoke('profiles:save', profiles),
   loadHuntHistory: () => ipcRenderer.invoke('history:load'),
+  exportHuntHistory: () => ipcRenderer.invoke('history:export'),
   loadAlertConfig: () => ipcRenderer.invoke('alerts:load'),
   saveAlertConfig: (config) => ipcRenderer.invoke('alerts:save', config),
   addAccount: (account) => ipcRenderer.invoke('account:add', account),

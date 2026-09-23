@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, WebContentsView, ipcMain, safeStorage, session, shell } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, safeStorage, session, shell, dialog } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { trustedUiUrl, isTrustedUiUrl } = require('./trusted-ui');
@@ -12,6 +12,7 @@ const { AuthService } = require('./auth-service');
 const { AuthRuntime } = require('./auth-runtime');
 const { HuntHistoryStore } = require('./hunt-history-store');
 const { AlertEngine, DEFAULT_ALERT_CONFIG, normalizeAlertConfig } = require('../shared/alert-engine');
+const { historyToCsv } = require('../shared/history-csv');
 
 let mainWindow;
 let gameViews;
@@ -161,6 +162,12 @@ ipcMain.handle('profiles:save', (event, profiles) => {
   } catch { return false; }
 });
 ipcMain.handle('history:load', (event) => isTrustedUi(event) && huntHistory ? huntHistory.getAll() : []);
+ipcMain.handle('history:export', async (event) => {
+  if (!isTrustedUi(event) || !huntHistory || !mainWindow) return { ok: false, reason: 'forbidden' };
+  const result = await dialog.showSaveDialog(mainWindow, { title: 'Exportar histórico do DarkGrid', defaultPath: 'darkgrid-hunts.csv', filters: [{ name: 'CSV', extensions: ['csv'] }] });
+  if (result.canceled || !result.filePath) return { ok: false, canceled: true };
+  try { fs.writeFileSync(result.filePath, historyToCsv(huntHistory.getAll()), 'utf8'); return { ok: true, filePath: result.filePath }; } catch { return { ok: false, reason: 'history_export_failed' }; }
+});
 ipcMain.handle('alerts:load', (event) => isTrustedUi(event) && alertEngine ? alertEngine.getConfig() : { ...DEFAULT_ALERT_CONFIG });
 ipcMain.handle('alerts:save', (event, config) => { if (!isTrustedUi(event) || !alertEngine) return { ok: false, reason: 'forbidden' }; const normalized = alertEngine.configure(config || {}); return saveAlertConfig(normalized) ? { ok: true, config: normalized } : { ok: false, reason: 'alert_config_save_failed' }; });
 
