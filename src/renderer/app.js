@@ -93,7 +93,17 @@ function fillIvFields(pokemon = {}) {
 async function openIv(account) {
   ivAccount = account;
   await refreshAccount(account);
-  $('#ivAccountLabel').textContent = `${account.name || 'Conta'} · informe os stats base para uma projeção completa`;
+  try {
+    const catalogResponse = await window.darkGridAPI.accountAction(account.id, 'readHunts', {});
+    const creatures = catalogResponse?.ok && catalogResponse.result?.ok && Array.isArray(catalogResponse.result.creatures) ? catalogResponse.result.creatures : [];
+    const normalize = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    for (const pokemon of account.team || []) {
+      const wanted = normalize(pokemon.name);
+      const creature = creatures.find((item) => normalize(item.name) === wanted || normalize(item.name).endsWith(wanted) || wanted.endsWith(normalize(item.name)));
+      if (creature?.baseStats) pokemon.baseStats = creature.baseStats;
+    }
+  } catch {}
+  $('#ivAccountLabel').textContent = `${account.name || 'Conta'} · stats base carregados do catálogo quando disponíveis`;
   const select = $('#ivPokemon');
   const team = Array.isArray(account.team) ? account.team : [];
   select.replaceChildren(...(team.length ? team.map((pokemon, index) => { const option = document.createElement('option'); option.value = String(index); option.textContent = pokemon.name || `Pokémon ${index + 1}`; return option; }) : [Object.assign(document.createElement('option'), { value: '-1', textContent: 'Entrada manual' })]));
