@@ -45,6 +45,14 @@ assert.equal(allowedOrigin('https://poke.idleworld.online.evil.test/game', 'http
   assert.equal(recovered.resumed, true, 'recovery deve reinstalar o coletor e retomar a última hunt');
   assert.equal(recoverySurface.calls.some((script) => script.includes('requestedSlug')), true);
 
+  let huntReads = 0;
+  const catalogSurface = new Surface({ execute: async (script) => { if (script.includes('/api/game/map-markers')) { huntReads += 1; return { ok: true, hunts: [{ slug: 'route-1' }], creatures: [] }; } return { ok: true }; } });
+  const catalogAdapter = new GameAdapter({ accountId: 'account-catalog', surface: catalogSurface, allowedOrigin: 'https://poke.idleworld.online' });
+  await catalogAdapter.readHunts();
+  await catalogAdapter.readHunts();
+  await catalogAdapter.readHunts({ force: true });
+  assert.equal(huntReads, 2, 'catálogo deve ser reutilizado por 60 segundos e aceitar refresh forçado');
+
   const actionSurface = new Surface({ execute: async () => ({ ok: true }) });
   const actionAdapter = new GameAdapter({ accountId: 'account-b', surface: actionSurface, allowedOrigin: 'https://poke.idleworld.online' });
   await Promise.all([actionAdapter.openDepot(), actionAdapter.openMarket()]);

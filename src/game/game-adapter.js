@@ -26,7 +26,7 @@ class GameAdapter extends EventEmitter {
   constructor({ accountId, surface, allowedOrigin, executionTimeoutMs = 10000 }) {
     super();
     if (!accountId || !surface || !allowedOrigin) throw new TypeError('GameAdapter requer accountId, surface e allowedOrigin');
-    this.accountId = String(accountId); this.surface = surface; this.allowedOrigin = allowedOrigin; this.executionTimeoutMs = executionTimeoutMs; this.queue = new SerialQueue(); this.bootstrapped = false; this.lastHunt = null;
+    this.accountId = String(accountId); this.surface = surface; this.allowedOrigin = allowedOrigin; this.executionTimeoutMs = executionTimeoutMs; this.queue = new SerialQueue(); this.bootstrapped = false; this.lastHunt = null; this.huntCatalogCache = null; this.huntCatalogCachedAt = 0;
   }
 
   bootstrap() { return this.#run(() => this.#execute(BOOTSTRAP_SCRIPT)).then((result) => { if (!result?.ok) throw error('BOOTSTRAP_FAILED', 'Coletor do jogo não foi inicializado'); this.bootstrapped = true; return result; }); }
@@ -35,7 +35,7 @@ class GameAdapter extends EventEmitter {
   openDepot() { return this.#action(OPEN_DEPOT_SCRIPT); }
   readDepot() { return this.#action(READ_DEPOT_SCRIPT); }
   readPokemon() { return this.#action(READ_POKEMON_SCRIPT); }
-  readHunts() { return this.#action(READ_HUNTS_SCRIPT); }
+  async readHunts({ force = false } = {}) { if (!force && this.huntCatalogCache && Date.now() - this.huntCatalogCachedAt < 60000) return this.huntCatalogCache; const result = await this.#action(READ_HUNTS_SCRIPT); if (result?.ok && Array.isArray(result.hunts)) { this.huntCatalogCache = result; this.huntCatalogCachedAt = Date.now(); } return result; }
   travelToHunt({ slug, name }) { return this.#action(travelScript(slug, name)); }
   returnToLastHunt(input) { return this.#action(returnHuntScript(input || {})); }
   detectGameLogin() { return this.#action(DETECT_GAME_LOGIN_SCRIPT); }
