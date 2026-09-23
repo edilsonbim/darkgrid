@@ -19,6 +19,7 @@ assert.match(html, /id="teamModal"/);
 assert.match(html, /id="sellPokemonButton"/);
 assert.match(html, /id="huntModal"/);
 assert.match(html, /id="huntOptions"/);
+assert.match(html, /id="rememberGameCredentials"/);
 assert.match(html, /id="tierlistModal"/);
 assert.match(app, /authLogout\(\)/);
 assert.match(app, /removeAccount\(account\.id\)/);

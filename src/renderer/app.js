@@ -1,6 +1,6 @@
 'use strict';
 
-const state = { accounts: [], history: [], alerts: {}, busy: false, auth: { ok: false } };
+const state = { accounts: [], history: [], alerts: {}, credentials: {}, busy: false, auth: { ok: false } };
 let gameLoginAccount = null;
 let operationsAccount = null;
 let inventoryAccount = null;
@@ -69,8 +69,8 @@ function setAuthStatus(status) {
 
 function openAuthModal() { $('#authModal').hidden = false; $('#authEmail').focus(); }
 function closeAuthModal() { $('#authModal').hidden = true; $('#authError').textContent = ''; }
-async function openGameLogin(account) { gameLoginAccount = account; await window.darkGridAPI.openAccount(account.id); syncLayout(); $('#gameLoginModal').hidden = false; $('#gameUsername').focus(); }
-function closeGameLogin() { gameLoginAccount = null; $('#gameLoginModal').hidden = true; $('#gameUsername').value = ''; $('#gamePassword').value = ''; $('#gameLoginError').textContent = ''; }
+async function openGameLogin(account) { gameLoginAccount = account; const saved = state.credentials[account.id] || {}; $('#gameUsername').value = saved.username || ''; $('#gamePassword').value = saved.password || ''; $('#rememberGameCredentials').checked = Boolean(saved.username && saved.password); await window.darkGridAPI.openAccount(account.id); syncLayout(); $('#gameLoginModal').hidden = false; $('#gameUsername').focus(); }
+function closeGameLogin() { gameLoginAccount = null; $('#gameLoginModal').hidden = true; $('#gameUsername').value = ''; $('#gamePassword').value = ''; $('#rememberGameCredentials').checked = false; $('#gameLoginError').textContent = ''; }
 async function openOperations(account) { operationsAccount = account; $('#operationsAccountLabel').textContent = account.name || 'Conta selecionada'; $('#operationsError').textContent = ''; $('#pokemonStatus').textContent = 'Carregando Pokémon…'; $('#operationsModal').hidden = false; $('#ballId').focus(); try { const response = await window.darkGridAPI.accountAction(account.id, 'readPokemon', {}); if (response?.ok && response.result?.ok) { account.pokemon = Array.isArray(response.result.items) ? response.result.items : []; $('#pokemonStatus').textContent = `${account.pokemon.length} Pokémon lido(s)`; } else $('#pokemonStatus').textContent = 'Lista de Pokémon indisponível'; } catch { $('#pokemonStatus').textContent = 'Lista de Pokémon indisponível'; } }
 function closeOperations() { operationsAccount = null; $('#operationsModal').hidden = true; $('#operationsError').textContent = ''; }
 async function protectedSale(kind, button) { if (!operationsAccount || operationsAccount.actionBusy) return; const account = operationsAccount; const source = kind === 'items' ? account.inventory : account.pokemon; const previewAction = kind === 'items' ? 'previewSellItems' : 'previewSellPokemon'; const saleAction = kind === 'items' ? 'sellItems' : 'sellPokemon'; const input = kind === 'items' ? { items: Array.isArray(source) ? source : [] } : { pokemon: Array.isArray(source) ? source : [] }; button.disabled = true; account.actionBusy = true; $('#operationsError').textContent = ''; try { const preview = await window.darkGridAPI.accountAction(account.id, previewAction, input); if (!preview?.ok || !preview.result?.ok) throw new Error(preview?.reason || 'preview_failed'); const count = kind === 'items' ? preview.result.items.length : preview.result.pokeIds.length; if (!count) throw new Error('nenhum_item_permitido'); const label = kind === 'items' ? `${count} tipo(s) de item permitido(s)` : `${count} Pokémon permitido(s)`; if (!window.confirm(`${label} serão vendidos. Itens raros e Pokémon protegidos permanecem bloqueados. Continuar?`)) return; const result = await window.darkGridAPI.accountAction(account.id, saleAction, input); if (!result?.ok || !result.result?.ok) throw new Error(result?.reason || result?.result?.reason || 'sale_failed'); account.status = 'online'; $('#operationsError').textContent = 'Venda concluída'; } catch (cause) { $('#operationsError').textContent = cause.message === 'nenhum_item_permitido' ? 'Nenhum item permitido para vender.' : `Venda não concluída: ${cause.message}`; } finally { account.actionBusy = false; button.disabled = false; render(); } }
@@ -238,6 +238,9 @@ $('#gameLoginForm').addEventListener('submit', async (event) => {
     if (!filled?.ok || !filled.result?.ok) throw new Error(filled?.reason || filled?.result?.reason || 'game_login_failed');
     const submitted = await window.darkGridAPI.accountAction(gameLoginAccount.id, 'submitGameLogin', {});
     if (!submitted?.ok || !submitted.result?.ok) { error.textContent = 'Campos preenchidos. Conclua o desafio humano no painel do jogo e pressione novamente.'; return; }
+    if ($('#rememberGameCredentials').checked) state.credentials[gameLoginAccount.id] = { id: gameLoginAccount.id, username: $('#gameUsername').value, password: $('#gamePassword').value };
+    else delete state.credentials[gameLoginAccount.id];
+    await window.darkGridAPI.saveCredentials(Object.values(state.credentials));
     closeGameLogin();
   } catch (cause) { error.textContent = `Não foi possível preencher o login: ${cause.message}`; } finally { button.disabled = false; }
 });
@@ -258,6 +261,8 @@ async function bootstrap() {
     state.auth = await window.darkGridAPI.authStatus() || { ok: false };
     setAuthStatus(state.auth);
     state.alerts = await window.darkGridAPI.loadAlertConfig();
+    const savedCredentials = await window.darkGridAPI.loadCredentials();
+    state.credentials = Object.fromEntries((Array.isArray(savedCredentials) ? savedCredentials : []).map((item) => [item.id, item]));
     if (state.auth.ok) state.history = await window.darkGridAPI.loadHuntHistory();
     if (state.auth.ok) await restoreAccounts();
     else render();

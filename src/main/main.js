@@ -95,6 +95,11 @@ function normalizeProfiles(value) {
   }));
 }
 
+function normalizeCredentials(value) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, MAX_ACCOUNTS).filter((item) => item && typeof item.id === 'string' && /^[a-zA-Z0-9_-]{1,64}$/.test(item.id)).map((item) => ({ id: item.id, username: String(item.username || '').slice(0, 160), password: String(item.password || '').slice(0, 512) })).filter((item) => item.username && item.password);
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1440,
@@ -149,14 +154,14 @@ ipcMain.handle('credentials:load', (event) => {
     const raw = fs.readFileSync(credentialsPath());
     const json = safeStorage.decryptString(raw);
     const value = JSON.parse(json);
-    return Array.isArray(value) ? value.slice(0, MAX_ACCOUNTS) : [];
+    return normalizeCredentials(value);
   } catch { return []; }
 });
 
 ipcMain.handle('credentials:save', (event, accounts) => {
   if (!isTrustedUi(event) || !Array.isArray(accounts)) return false;
   try {
-    const value = JSON.stringify(accounts.slice(0, MAX_ACCOUNTS));
+    const value = JSON.stringify(normalizeCredentials(accounts));
     if (!safeStorage.isEncryptionAvailable()) return false;
     const target = credentialsPath();
     fs.writeFileSync(`${target}.tmp`, safeStorage.encryptString(value));
