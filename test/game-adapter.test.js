@@ -26,6 +26,8 @@ assert.equal(allowedOrigin('https://poke.idleworld.online.evil.test/game', 'http
   assert.equal(state.metrics.shiny, 1);
   assert.equal(state.inventory[0].name, 'Potion');
   assert.equal(state.team[0].name, 'Pikachu');
+  assert.deepEqual(adapter.previewSellItems({ items: [{ id: 10, name: 'Ore', category: 'material', quantity: 2 }, { id: 11, name: 'Potion', category: 'heal', quantity: 5 }] }).items, [{ itemId: 10, qty: 2 }]);
+  assert.deepEqual(adapter.previewSellPokemon({ pokemon: [{ id: 'safe', sellValue: 10, ivTotal: 20, quality: 1 }, { id: 'team', sellValue: 10, team: true }] }).pokeIds, ['safe']);
   assert.equal(surface.maxRunning, 1);
 
   const actionSurface = new Surface({ execute: async () => ({ ok: true }) });

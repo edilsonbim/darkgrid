@@ -9,6 +9,7 @@ const { DETECT_GAME_LOGIN_SCRIPT, FILL_GAME_LOGIN_SCRIPT, SUBMIT_GAME_LOGIN_SCRI
 const { BUY_BALLS_SCRIPT, SELL_ITEMS_SCRIPT, SELL_POKEMON_SCRIPT, SELL_STONE_SCRIPT } = require('./operation-scripts');
 const { selectSellableItems, selectSellablePokemon } = require('./sell-policy');
 const { READ_DEPOT_SCRIPT } = require('./depot-script');
+const { READ_POKEMON_SCRIPT } = require('./pokemon-script');
 
 const VALID_STATUSES = new Set(['online', 'stale', 'login_required']);
 
@@ -32,6 +33,7 @@ class GameAdapter extends EventEmitter {
   openMarket() { return this.#action(OPEN_MARKET_SCRIPT); }
   openDepot() { return this.#action(OPEN_DEPOT_SCRIPT); }
   readDepot() { return this.#action(READ_DEPOT_SCRIPT); }
+  readPokemon() { return this.#action(READ_POKEMON_SCRIPT); }
   travelToHunt({ slug, name }) { return this.#action(travelScript(slug, name)); }
   returnToLastHunt(input) { return this.#action(returnHuntScript(input || {})); }
   detectGameLogin() { return this.#action(DETECT_GAME_LOGIN_SCRIPT); }
@@ -40,7 +42,9 @@ class GameAdapter extends EventEmitter {
   reload() { return this.#run(async () => { if (typeof this.surface.reload !== 'function') throw error('RELOAD_UNAVAILABLE', 'A superfície não suporta reload'); await this.surface.reload(); return { ok: true, accountId: this.accountId }; }); }
   buyBalls(input) { return this.#actionWithTown(BUY_BALLS_SCRIPT(input || {})); }
   sellItems(input) { const items = Array.isArray(input) ? input : input?.items; const protectedIds = Array.isArray(input?.protectedIds) ? input.protectedIds : []; return this.#actionWithTown(SELL_ITEMS_SCRIPT(selectSellableItems(items, protectedIds))); }
-  sellPokemon(pokemon) { return this.#actionWithTown(SELL_POKEMON_SCRIPT(selectSellablePokemon(pokemon))); }
+  previewSellItems(input) { const items = Array.isArray(input) ? input : input?.items; const protectedIds = Array.isArray(input?.protectedIds) ? input.protectedIds : []; return { ok: true, items: selectSellableItems(items, protectedIds), accountId: this.accountId }; }
+  previewSellPokemon(input) { const pokemon = Array.isArray(input) ? input : input?.pokemon; return { ok: true, pokeIds: selectSellablePokemon(pokemon), accountId: this.accountId }; }
+  sellPokemon(pokemon) { const list = Array.isArray(pokemon) ? pokemon : pokemon?.pokemon; return this.#actionWithTown(SELL_POKEMON_SCRIPT(selectSellablePokemon(list))); }
   sellStone(input) { return this.#actionWithTown(SELL_STONE_SCRIPT(input || {})); }
 
   #action(script) { return this.#run(async () => ({ ...this.#validateActionResult(await this.#execute(script)), accountId: this.accountId })); }
