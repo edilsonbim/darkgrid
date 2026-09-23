@@ -30,6 +30,21 @@ assert.equal(allowedOrigin('https://poke.idleworld.online.evil.test/game', 'http
   assert.deepEqual(adapter.previewSellPokemon({ pokemon: [{ id: 'safe', sellValue: 10, ivTotal: 20, quality: 1 }, { id: 'team', sellValue: 10, team: true }] }).pokeIds, ['safe']);
   assert.equal(surface.maxRunning, 1);
 
+  let reloads = 0;
+  const recoverySurface = new Surface({ execute: async (script) => {
+    if (script.includes('collectorVersion')) return { ok: true, status: 'online', huntSlug: 'route-2', level: 20, metrics: {} };
+    if (script.includes('requestedSlug')) return { ok: true, mode: 'map' };
+    if (script.includes('window.__darkGrid')) return { ok: true, version: 1 };
+    return { ok: true };
+  } });
+  recoverySurface.reload = async () => { reloads += 1; };
+  const recoveryAdapter = new GameAdapter({ accountId: 'account-recovery', surface: recoverySurface, allowedOrigin: 'https://poke.idleworld.online' });
+  await recoveryAdapter.getState();
+  const recovered = await recoveryAdapter.recover();
+  assert.equal(reloads, 1);
+  assert.equal(recovered.resumed, true, 'recovery deve reinstalar o coletor e retomar a última hunt');
+  assert.equal(recoverySurface.calls.some((script) => script.includes('requestedSlug')), true);
+
   const actionSurface = new Surface({ execute: async () => ({ ok: true }) });
   const actionAdapter = new GameAdapter({ accountId: 'account-b', surface: actionSurface, allowedOrigin: 'https://poke.idleworld.online' });
   await Promise.all([actionAdapter.openDepot(), actionAdapter.openMarket()]);

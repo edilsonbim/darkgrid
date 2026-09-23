@@ -41,7 +41,20 @@ class GameAdapter extends EventEmitter {
   detectGameLogin() { return this.#action(DETECT_GAME_LOGIN_SCRIPT); }
   fillGameCredentials(input) { return this.#action(FILL_GAME_LOGIN_SCRIPT(input || {})); }
   submitGameLogin() { return this.#action(SUBMIT_GAME_LOGIN_SCRIPT); }
-  reload() { return this.#run(async () => { if (typeof this.surface.reload !== 'function') throw error('RELOAD_UNAVAILABLE', 'A superfície não suporta reload'); await this.surface.reload(); return { ok: true, accountId: this.accountId }; }); }
+  reload() { return this.#run(async () => { if (typeof this.surface.reload !== 'function') throw error('RELOAD_UNAVAILABLE', 'A superfície não suporta reload'); this.bootstrapped = false; await this.surface.reload(); return { ok: true, accountId: this.accountId }; }); }
+  async recover() {
+    const hunt = this.lastHunt ? { ...this.lastHunt } : null;
+    await this.reload();
+    let ready = false;
+    for (let attempt = 0; attempt < 12 && !ready; attempt += 1) {
+      if (attempt) await new Promise((resolve) => setTimeout(resolve, 350));
+      try { ready = Boolean((await this.bootstrap())?.ok); } catch {}
+    }
+    if (!ready) throw error('RECOVERY_BOOTSTRAP_FAILED', 'O painel não ficou pronto após o reload');
+    if (!hunt?.slug) return { ok: true, accountId: this.accountId, resumed: false };
+    const resumed = await this.returnToLastHunt(hunt);
+    return { ...resumed, accountId: this.accountId, resumed: Boolean(resumed?.ok) };
+  }
   buyBalls(input) { return this.#actionWithTown(BUY_BALLS_SCRIPT(input || {})); }
   sellItems(input) { const items = Array.isArray(input) ? input : input?.items; const protectedIds = Array.isArray(input?.protectedIds) ? input.protectedIds : []; return this.#actionWithTown(SELL_ITEMS_SCRIPT(selectSellableItems(items, protectedIds))); }
   previewSellItems(input) { const items = Array.isArray(input) ? input : input?.items; const protectedIds = Array.isArray(input?.protectedIds) ? input.protectedIds : []; return { ok: true, items: selectSellableItems(items, protectedIds), accountId: this.accountId }; }
