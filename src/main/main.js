@@ -116,9 +116,10 @@ ipcMain.handle('auth:logout', async (event) => { if (!isTrustedUi(event)) return
 
 ipcMain.handle('credentials:load', (event) => {
   if (!isTrustedUi(event)) return [];
+  if (!safeStorage.isEncryptionAvailable()) return [];
   try {
     const raw = fs.readFileSync(credentialsPath());
-    const json = safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(raw) : raw.toString('utf8');
+    const json = safeStorage.decryptString(raw);
     const value = JSON.parse(json);
     return Array.isArray(value) ? value.slice(0, MAX_ACCOUNTS) : [];
   } catch { return []; }
