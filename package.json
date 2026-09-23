@@ -2,13 +2,26 @@
   "name": "darkgrid",
   "version": "0.1.0",
   "description": "Central de contas e farm para o DarkGrid",
+  "author": "DarkGrid Team",
   "main": "src/main/main.js",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "dist": "electron-builder --win nsis portable"
   },
   "devDependencies": {
-    "electron": "^43.1.1"
+    "electron": "^43.1.1",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.darkgrid.app",
+    "productName": "DarkGrid",
+    "asar": true,
+    "files": ["src/**/*", "package.json", "README.md", "docs/**/*"],
+    "directories": { "output": "release" },
+    "win": { "target": ["nsis", "portable"], "artifactName": "DarkGrid-${version}-${arch}.${ext}" },
+    "nsis": { "artifactName": "DarkGrid-${version}-setup-${arch}.${ext}", "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true },
+    "portable": { "artifactName": "DarkGrid-${version}-portable-${arch}.${ext}" }
   }
 }
