@@ -1,0 +1,9 @@
+'use strict';
+
+const DETECT_GAME_LOGIN_SCRIPT = String.raw`(()=>{const user=document.querySelector('input[autocomplete="username"],input[placeholder*="Email" i],input[type="text"]'),password=document.querySelector('input[autocomplete="current-password"],input[placeholder*="Senha" i],input[type="password"]'),challenge=document.querySelector('input[name="cf-turnstile-response"]');return{ok:true,loginPage:Boolean(user&&password),challengePresent:Boolean(challenge),challengeSolved:Boolean(challenge&&challenge.value)}})()`;
+
+const FILL_GAME_LOGIN_SCRIPT = ({ username, password }) => String.raw`(()=>{const user=document.querySelector('input[autocomplete="username"],input[placeholder*="Email" i],input[type="text"]'),pass=document.querySelector('input[autocomplete="current-password"],input[placeholder*="Senha" i],input[type="password"]');if(!user||!pass)return{ok:false,reason:'game_login_fields_missing'};const set=(element,value)=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(element,value);element.dispatchEvent(new Event('input',{bubbles:true}));element.dispatchEvent(new Event('change',{bubbles:true}))};set(user,${JSON.stringify(String(username||''))});set(pass,${JSON.stringify(String(password||''))});const challenge=document.querySelector('input[name="cf-turnstile-response"]');return{ok:true,challengeSolved:Boolean(challenge&&challenge.value)}})()`;
+
+const SUBMIT_GAME_LOGIN_SCRIPT = String.raw`(()=>{const challenge=document.querySelector('input[name="cf-turnstile-response"]');if(!challenge||!challenge.value)return{ok:false,reason:'human_challenge_required'};const submit=document.querySelector('button[type="submit"],button');if(!submit||submit.disabled)return{ok:false,reason:'game_login_submit_unavailable'};submit.click();return{ok:true,submitted:true}})()`;
+
+module.exports = { DETECT_GAME_LOGIN_SCRIPT, FILL_GAME_LOGIN_SCRIPT, SUBMIT_GAME_LOGIN_SCRIPT };

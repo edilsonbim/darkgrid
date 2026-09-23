@@ -39,6 +39,20 @@
       </form>
     </section>
   </div>
+  <div class="modal-backdrop" id="gameLoginModal" hidden>
+    <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="gameLoginTitle">
+      <button class="modal-close" id="gameLoginClose" aria-label="Fechar">×</button>
+      <p class="eyebrow">CONTA DO JOGO</p>
+      <h2 id="gameLoginTitle">Entrar no Poke Idle World</h2>
+      <p class="modal-copy">As credenciais são usadas somente no painel isolado do jogo e não são enviadas ao servidor do DarkGrid. O desafio humano precisa ser concluído manualmente.</p>
+      <form id="gameLoginForm">
+        <label>E-mail ou usuário<input id="gameUsername" type="text" autocomplete="username" required></label>
+        <label>Senha<input id="gamePassword" type="password" autocomplete="current-password" required></label>
+        <p class="form-error" id="gameLoginError" role="alert"></p>
+        <button class="primary-button full-width" type="submit">Preencher login</button>
+      </form>
+    </section>
+  </div>
   <script src="./app.js"></script>
 </body>
 </html>

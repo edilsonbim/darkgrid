@@ -1,6 +1,7 @@
 'use strict';
 
 const state = { accounts: [], busy: false, auth: { ok: false } };
+let gameLoginAccount = null;
 const $ = (selector) => document.querySelector(selector);
 const statusLabels = { loading: 'Carregando jogo', login_required: 'Login necessário', online: 'Online', stale: 'Sem atividade recente', offline: 'Offline', error: 'Erro no painel', opened: 'Painel aberto', closed: 'Painel oculto' };
 
@@ -19,9 +20,9 @@ function render() {
     const status = document.createElement('span'); status.className = 'account-status'; status.textContent = statusLabels[account.status] || account.status || 'Desconectada';
     const open = document.createElement('button'); open.className = 'mini-button'; open.textContent = 'Abrir'; open.addEventListener('click', () => openAccount(account));
     const actionBar = document.createElement('div'); actionBar.className = 'account-action-bar';
-    for (const [label, action] of [['Market', 'openMarket'], ['Depot', 'openDepot'], ['Retornar', 'returnToLastHunt'], ['Atualizar', 'refresh']]) {
+    for (const [label, action] of [['Login', 'gameLogin'], ['Market', 'openMarket'], ['Depot', 'openDepot'], ['Retornar', 'returnToLastHunt'], ['Atualizar', 'refresh']]) {
       const button = document.createElement('button'); button.className = 'mini-button'; button.textContent = label; button.disabled = Boolean(account.actionBusy);
-      button.addEventListener('click', () => action === 'refresh' ? refreshAccount(account) : runAccountAction(account, action, action === 'returnToLastHunt' ? { slug: account.huntSlug, name: account.hunt } : {})); actionBar.append(button);
+      button.addEventListener('click', () => action === 'refresh' ? refreshAccount(account) : action === 'gameLogin' ? openGameLogin(account) : runAccountAction(account, action, action === 'returnToLastHunt' ? { slug: account.huntSlug, name: account.hunt } : {})); actionBar.append(button);
     }
     actions.append(status, open); card.append(name, actions, actionBar); return card;
   }));
@@ -37,6 +38,8 @@ function setAuthStatus(status) {
 
 function openAuthModal() { $('#authModal').hidden = false; $('#authEmail').focus(); }
 function closeAuthModal() { $('#authModal').hidden = true; $('#authError').textContent = ''; }
+async function openGameLogin(account) { gameLoginAccount = account; await window.darkGridAPI.openAccount(account.id); syncLayout(); $('#gameLoginModal').hidden = false; $('#gameUsername').focus(); }
+function closeGameLogin() { gameLoginAccount = null; $('#gameLoginModal').hidden = true; $('#gameUsername').value = ''; $('#gamePassword').value = ''; $('#gameLoginError').textContent = ''; }
 
 async function addAccount() {
   if (!state.auth.ok) { openAuthModal(); return; }
@@ -112,6 +115,21 @@ $('#authForm').addEventListener('submit', async (event) => {
     closeAuthModal();
     await addAccount();
   } catch (cause) { error.textContent = `Não foi possível entrar: ${cause.message}`; } finally { button.disabled = false; }
+});
+$('#gameLoginClose').addEventListener('click', closeGameLogin);
+$('#gameLoginModal').addEventListener('click', (event) => { if (event.target.id === 'gameLoginModal') closeGameLogin(); });
+$('#gameLoginForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!gameLoginAccount) return;
+  const button = event.currentTarget.querySelector('button[type="submit"]');
+  const error = $('#gameLoginError'); button.disabled = true; error.textContent = '';
+  try {
+    const filled = await window.darkGridAPI.accountAction(gameLoginAccount.id, 'fillGameCredentials', { username: $('#gameUsername').value, password: $('#gamePassword').value });
+    if (!filled?.ok || !filled.result?.ok) throw new Error(filled?.reason || filled?.result?.reason || 'game_login_failed');
+    const submitted = await window.darkGridAPI.accountAction(gameLoginAccount.id, 'submitGameLogin', {});
+    if (!submitted?.ok || !submitted.result?.ok) { error.textContent = 'Campos preenchidos. Conclua o desafio humano no painel do jogo e pressione novamente.'; return; }
+    closeGameLogin();
+  } catch (cause) { error.textContent = `Não foi possível preencher o login: ${cause.message}`; } finally { button.disabled = false; }
 });
 window.addEventListener('resize', syncLayout);
 window.darkGridAPI.onAccountStatus((payload) => { const account = state.accounts.find((item) => item.id === payload.id); if (account) { account.status = payload.status; render(); } });

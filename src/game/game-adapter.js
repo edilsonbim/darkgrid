@@ -5,6 +5,7 @@ const { BOOTSTRAP_SCRIPT, READ_STATE_SCRIPT, OPEN_MARKET_SCRIPT, OPEN_DEPOT_SCRI
 const { travelScript } = require('./travel-script');
 const { returnHuntScript } = require('./return-hunt-script');
 const { GO_TOWN_SCRIPT } = require('./town-script');
+const { DETECT_GAME_LOGIN_SCRIPT, FILL_GAME_LOGIN_SCRIPT, SUBMIT_GAME_LOGIN_SCRIPT } = require('./game-login-script');
 const { BUY_BALLS_SCRIPT, SELL_ITEMS_SCRIPT, SELL_POKEMON_SCRIPT, SELL_STONE_SCRIPT } = require('./operation-scripts');
 const { selectSellableItems, selectSellablePokemon } = require('./sell-policy');
 
@@ -31,6 +32,9 @@ class GameAdapter extends EventEmitter {
   openDepot() { return this.#action(OPEN_DEPOT_SCRIPT); }
   travelToHunt({ slug, name }) { return this.#action(travelScript(slug, name)); }
   returnToLastHunt(input) { return this.#action(returnHuntScript(input || {})); }
+  detectGameLogin() { return this.#action(DETECT_GAME_LOGIN_SCRIPT); }
+  fillGameCredentials(input) { return this.#action(FILL_GAME_LOGIN_SCRIPT(input || {})); }
+  submitGameLogin() { return this.#action(SUBMIT_GAME_LOGIN_SCRIPT); }
   buyBalls(input) { return this.#actionWithTown(BUY_BALLS_SCRIPT(input || {})); }
   sellItems(input) { const items = Array.isArray(input) ? input : input?.items; const protectedIds = Array.isArray(input?.protectedIds) ? input.protectedIds : []; return this.#actionWithTown(SELL_ITEMS_SCRIPT(selectSellableItems(items, protectedIds))); }
   sellPokemon(pokemon) { return this.#actionWithTown(SELL_POKEMON_SCRIPT(selectSellablePokemon(pokemon))); }
