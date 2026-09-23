@@ -3,6 +3,7 @@
 const { app, BrowserWindow, WebContentsView, ipcMain, safeStorage, session, shell } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const { trustedUiUrl, isTrustedUiUrl } = require('./trusted-ui');
 const { GAME_ORIGIN, MAX_ACCOUNTS } = require('../shared/constants');
 const { GameViewManager } = require('./game-view-manager');
 const { GameAdapter } = require('../game/game-adapter');
@@ -15,9 +16,10 @@ let gameViews;
 const gameAdapters = new Map();
 const accountPollers = new Map();
 let authRuntime;
+const rendererUrl = trustedUiUrl(path.join(__dirname, '../renderer/index.html'));
 
 function isTrustedUi(event) {
-  try { return String(event.senderFrame?.url || '').startsWith('file://'); } catch { return false; }
+  try { return isTrustedUiUrl(event.senderFrame?.url, rendererUrl); } catch { return false; }
 }
 
 function credentialsPath() { return path.join(app.getPath('userData'), 'credentials.enc'); }
