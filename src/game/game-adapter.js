@@ -35,6 +35,7 @@ class GameAdapter extends EventEmitter {
   detectGameLogin() { return this.#action(DETECT_GAME_LOGIN_SCRIPT); }
   fillGameCredentials(input) { return this.#action(FILL_GAME_LOGIN_SCRIPT(input || {})); }
   submitGameLogin() { return this.#action(SUBMIT_GAME_LOGIN_SCRIPT); }
+  reload() { return this.#run(async () => { if (typeof this.surface.reload !== 'function') throw error('RELOAD_UNAVAILABLE', 'A superfície não suporta reload'); await this.surface.reload(); return { ok: true, accountId: this.accountId }; }); }
   buyBalls(input) { return this.#actionWithTown(BUY_BALLS_SCRIPT(input || {})); }
   sellItems(input) { const items = Array.isArray(input) ? input : input?.items; const protectedIds = Array.isArray(input?.protectedIds) ? input.protectedIds : []; return this.#actionWithTown(SELL_ITEMS_SCRIPT(selectSellableItems(items, protectedIds))); }
   sellPokemon(pokemon) { return this.#actionWithTown(SELL_POKEMON_SCRIPT(selectSellablePokemon(pokemon))); }
