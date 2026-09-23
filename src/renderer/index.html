@@ -125,6 +125,15 @@
       <div class="analyzer-grid" id="ivResult"></div>
     </section>
   </div>
+  <div class="modal-backdrop" id="scriptsModal" hidden>
+    <section class="auth-modal scripts-modal" role="dialog" aria-modal="true" aria-labelledby="scriptsTitle">
+      <button class="modal-close" id="scriptsClose" aria-label="Fechar">×</button>
+      <p class="eyebrow">AUTOMAÇÃO LOCAL</p>
+      <h2 id="scriptsTitle">Userscript</h2>
+      <p class="modal-copy">O código será executado somente na sessão oficial selecionada. Ele terá acesso à página do jogo; execute apenas scripts que você revisou.</p>
+      <form id="scriptsForm" class="scripts-form"><label>Conta<select id="scriptAccount"></select></label><label>Código<textarea id="userScriptEditor" rows="12" spellcheck="false" placeholder="return { ok: true };" maxlength="200000"></textarea></label><p class="form-error" id="scriptsError" role="alert"></p><button class="primary-button full-width" type="submit">Executar na conta</button><p class="settings-saved" id="scriptsStatus" role="status"></p></form>
+    </section>
+  </div>
   <div class="modal-backdrop" id="huntModal" hidden>
     <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="huntTitle">
       <button class="modal-close" id="huntClose" aria-label="Fechar">×</button>

@@ -40,9 +40,9 @@ function render() {
     const open = document.createElement('button'); open.className = 'mini-button'; open.textContent = 'Abrir'; open.addEventListener('click', () => openAccount(account));
     const remove = document.createElement('button'); remove.className = 'mini-button danger-button'; remove.textContent = 'Remover'; remove.disabled = Boolean(account.actionBusy); remove.addEventListener('click', () => removeAccount(account));
     const actionBar = document.createElement('div'); actionBar.className = 'account-action-bar';
-    for (const [label, action] of [['Login', 'gameLogin'], ['Hunt', 'hunt'], ['Market', 'openMarket'], ['Depot', 'openDepot'], ['Equipe', 'team'], ['IV', 'iv'], ['Inventário', 'inventory'], ['Operações', 'operations'], ['Retornar', 'returnToLastHunt'], ['Atualizar', 'refresh']]) {
+    for (const [label, action] of [['Login', 'gameLogin'], ['Hunt', 'hunt'], ['Market', 'openMarket'], ['Depot', 'openDepot'], ['Equipe', 'team'], ['IV', 'iv'], ['Scripts', 'scripts'], ['Inventário', 'inventory'], ['Operações', 'operations'], ['Retornar', 'returnToLastHunt'], ['Atualizar', 'refresh']]) {
       const button = document.createElement('button'); button.className = 'mini-button'; button.textContent = label; button.disabled = Boolean(account.actionBusy);
-      button.addEventListener('click', () => action === 'refresh' ? refreshAccount(account) : action === 'gameLogin' ? openGameLogin(account) : action === 'inventory' ? openInventory(account) : action === 'team' ? openTeam(account) : action === 'iv' ? openIv(account) : action === 'hunt' ? openHunt(account) : action === 'operations' ? openOperations(account) : runAccountAction(account, action, action === 'returnToLastHunt' ? { slug: account.huntSlug, name: account.hunt } : {})); actionBar.append(button);
+      button.addEventListener('click', () => action === 'refresh' ? refreshAccount(account) : action === 'gameLogin' ? openGameLogin(account) : action === 'inventory' ? openInventory(account) : action === 'team' ? openTeam(account) : action === 'iv' ? openIv(account) : action === 'scripts' ? openScripts(account) : action === 'hunt' ? openHunt(account) : action === 'operations' ? openOperations(account) : runAccountAction(account, action, action === 'returnToLastHunt' ? { slug: account.huntSlug, name: account.hunt } : {})); actionBar.append(button);
     }
     actions.append(status, open, remove); card.append(name, actions, actionBar); return card;
   }));
@@ -83,6 +83,7 @@ async function openTeam(account) { teamAccount = account; await refreshAccount(a
 function renderTeam(account) { const list = $('#teamList'); const team = Array.isArray(account?.team) ? account.team : []; list.replaceChildren(...(team.length ? team.map((pokemon) => { const row = document.createElement('div'); row.className = 'team-row'; const name = document.createElement('div'); name.className = 'team-name'; const title = document.createElement('strong'); title.textContent = `${pokemon.leader ? '★ ' : ''}${pokemon.name}`; const meta = document.createElement('small'); meta.textContent = `Nv. ${pokemon.level} · IV ${pokemon.ivTotal} · Q ${pokemon.quality.toFixed(2)}`; name.append(title, meta); const hp = document.createElement('span'); hp.className = 'team-hp'; hp.textContent = `${pokemon.hp}/${pokemon.maxHp} HP${pokemon.shiny ? ' · shiny' : ''}`; row.append(name, hp); return row; }) : [Object.assign(document.createElement('p'), { className: 'history-empty', textContent: 'Nenhum Pokémon na equipe.' })])); }
 function closeTeam() { teamAccount = null; $('#teamModal').hidden = true; }
 let ivAccount = null;
+let scriptAccount = null;
 function fillIvFields(pokemon = {}) {
   $('#ivLevel').value = Number(pokemon.level || ivAccount?.level || 1);
   $('#ivQuality').value = Number(pokemon.quality || 1);
@@ -115,6 +116,15 @@ function renderIvResult(result) {
   const items = [['Fonte', result.ivSource || 'desconhecida'], ['Poder', result.power == null ? '—' : Number(result.power).toLocaleString('pt-BR')], ...Object.entries(result.stats || {}).map(([key, value]) => [key.toUpperCase(), value == null ? '—' : Number(value).toLocaleString('pt-BR')])];
   $('#ivResult').replaceChildren(...items.map(([label, value]) => { const item = document.createElement('div'); item.className = 'analyzer-kpi'; const title = document.createElement('span'); title.textContent = label; const number = document.createElement('strong'); number.textContent = String(value); item.append(title, number); return item; }));
 }
+function openScripts(account) {
+  scriptAccount = account;
+  const select = $('#scriptAccount');
+  select.replaceChildren(...state.accounts.map((item) => { const option = document.createElement('option'); option.value = item.id; option.textContent = item.name || item.label || item.id; return option; }));
+  select.value = account.id;
+  $('#userScriptEditor').value = localStorage.getItem('darkgrid-user-script') || 'return { ok: true };';
+  $('#scriptsError').textContent = ''; $('#scriptsStatus').textContent = ''; $('#scriptsModal').hidden = false;
+}
+function closeScripts() { scriptAccount = null; $('#scriptsModal').hidden = true; $('#scriptsError').textContent = ''; }
 async function openHunt(account) { huntAccount = account; $('#huntAccountLabel').textContent = account.name || 'Conta selecionada'; $('#huntSlug').value = account.huntSlug || ''; $('#huntName').value = account.hunt || ''; $('#huntError').textContent = ''; $('#huntStatus').textContent = 'Carregando catálogo…'; $('#huntModal').hidden = false; try { const response = await window.darkGridAPI.accountAction(account.id, 'readHunts', {}); const hunts = response?.ok && response.result?.ok && Array.isArray(response.result.hunts) ? response.result.hunts : []; $('#huntOptions').replaceChildren(...hunts.map((hunt) => { const option = document.createElement('option'); option.value = hunt.slug; option.label = hunt.level ? `${hunt.name} · Nv. ${hunt.level}` : hunt.name; return option; })); $('#huntStatus').textContent = hunts.length ? `${hunts.length} hunts disponíveis` : 'Catálogo indisponível; use o slug manualmente'; } catch { $('#huntStatus').textContent = 'Catálogo indisponível; use o slug manualmente'; } $('#huntSlug').focus(); }
 function closeHunt() { huntAccount = null; $('#huntModal').hidden = true; $('#huntError').textContent = ''; }
 async function openTierlist(account = state.accounts.find((item) => item.status === 'online' || item.status === 'stale') || state.accounts[0]) { $('#tierlistModal').hidden = false; $('#tierlistList').replaceChildren(Object.assign(document.createElement('p'), { className: 'history-empty', textContent: 'Carregando catálogo e cálculo…' })); if (!account) { $('#tierlistStatus').textContent = 'Conecte uma conta para carregar os dados do jogo.'; return; } $('#tierlistStatus').textContent = `Analisando com os dados de ${account.name || 'conta selecionada'}…`; try { const catalogResponse = await window.darkGridAPI.accountAction(account.id, 'readHunts', {}); if (!catalogResponse?.ok || !catalogResponse.result?.ok) throw new Error(catalogResponse?.reason || catalogResponse?.result?.reason || 'catalog_unavailable'); const result = await window.darkGridAPI.calculateTierlist(catalogResponse.result, account.level || 0); if (!result?.ok) throw new Error(result?.reason || 'tierlist_failed'); const rows = Array.isArray(result.rows) ? result.rows.slice(0, 60) : []; $('#tierlistStatus').textContent = rows.length ? `${rows.length} espécies analisadas · nível ${account.level || 'por hunt'}` : 'Dados insuficientes para calcular a tierlist.'; $('#tierlistList').replaceChildren(...(rows.length ? rows.map((row, index) => { const element = document.createElement('article'); element.className = 'tierlist-row'; const rank = document.createElement('span'); rank.className = 'tierlist-rank'; rank.textContent = `${index + 1}.`; const info = document.createElement('div'); info.className = 'tierlist-name'; const name = document.createElement('strong'); name.textContent = row.baseName || row.name; const detail = document.createElement('small'); detail.textContent = `${row.types.join('/')} · ${row.move?.name || 'sem golpe'} · melhor em ${row.hunt?.name || '—'}`; info.append(name, detail); const score = document.createElement('strong'); score.className = 'tierlist-score'; score.textContent = `${Math.round(row.score).toLocaleString('pt-BR')} XP/h*`; element.append(rank, info, score); return element; }) : [Object.assign(document.createElement('p'), { className: 'history-empty', textContent: 'Nenhuma linha disponível.' })])); } catch (cause) { $('#tierlistStatus').textContent = `Não foi possível calcular: ${cause.message}`; } }
@@ -269,6 +279,9 @@ $('#teamModal').addEventListener('click', (event) => { if (event.target.id === '
 $('#ivClose').addEventListener('click', closeIv);
 $('#ivModal').addEventListener('click', (event) => { if (event.target.id === 'ivModal') closeIv(); });
 $('#ivPokemon').addEventListener('change', () => { const index = Number($('#ivPokemon').value); fillIvFields(ivAccount?.team?.[index] || {}); });
+$('#scriptsClose').addEventListener('click', closeScripts);
+$('#scriptsModal').addEventListener('click', (event) => { if (event.target.id === 'scriptsModal') closeScripts(); });
+$('#scriptAccount').addEventListener('change', () => { scriptAccount = state.accounts.find((account) => account.id === $('#scriptAccount').value) || scriptAccount; });
 $('#huntClose').addEventListener('click', closeHunt);
 $('#huntModal').addEventListener('click', (event) => { if (event.target.id === 'huntModal') closeHunt(); });
 $('#tierlistButton').addEventListener('click', () => openTierlist());
@@ -288,6 +301,18 @@ $('#ivForm').addEventListener('submit', async (event) => {
     renderIvResult(response.result);
     if (!response.result.valid) $('#ivError').textContent = 'Preencha os seis stats base para projetar os atributos.';
   } catch (cause) { $('#ivError').textContent = `Não foi possível calcular: ${cause.message}`; }
+});
+$('#scriptsForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const script = $('#userScriptEditor').value;
+  if (!scriptAccount || !script.trim()) { $('#scriptsError').textContent = 'Selecione uma conta e informe um script.'; return; }
+  $('#scriptsError').textContent = ''; $('#scriptsStatus').textContent = 'Executando…';
+  try {
+    localStorage.setItem('darkgrid-user-script', script);
+    const response = await window.darkGridAPI.accountAction(scriptAccount.id, 'runUserScript', { script });
+    if (!response?.ok || !response.result?.ok) throw new Error(response?.reason || response?.result?.reason || 'user_script_failed');
+    $('#scriptsStatus').textContent = response.result.result == null ? 'Script concluído.' : `Resultado: ${JSON.stringify(response.result.result).slice(0, 400)}`;
+  } catch (cause) { $('#scriptsError').textContent = `Script não executado: ${cause.message}`; $('#scriptsStatus').textContent = ''; }
 });
 $('#huntForm').addEventListener('submit', async (event) => { event.preventDefault(); if (!huntAccount || huntAccount.actionBusy) return; const account = huntAccount; const button = event.currentTarget.querySelector('button[type="submit"]'); button.disabled = true; $('#huntError').textContent = ''; account.actionBusy = true; render(); try { const slug = $('#huntSlug').value.trim(); const name = $('#huntName').value.trim() || slug; const response = await window.darkGridAPI.accountAction(account.id, 'travelToHunt', { slug, name }); if (!response?.ok || !response.result?.ok) throw new Error(response?.reason || response?.result?.reason || 'travel_failed'); account.huntSlug = slug; account.hunt = name; account.status = 'online'; closeHunt(); } catch (cause) { $('#huntError').textContent = `Não foi possível viajar: ${cause.message}`; } finally { account.actionBusy = false; button.disabled = false; render(); } });
 $('#alertSettingsForm').addEventListener('submit', async (event) => { event.preventDefault(); const result = await window.darkGridAPI.saveAlertConfig({ enabled: $('#alertEnabled').checked, nativeNotifications: $('#alertNativeNotifications').checked, accountOffline: $('#alertOffline').checked, noBalls: $('#alertNoBalls').checked, noProgress: $('#alertNoProgress').checked, lowBalls: Number($('#alertLowBalls').value), noProgressSeconds: Number($('#alertNoProgressMinutes').value) * 60 }); if (result?.ok) { state.alerts = result.config; $('#settingsSaved').textContent = 'Preferências salvas'; } else $('#settingsSaved').textContent = 'Não foi possível salvar'; });

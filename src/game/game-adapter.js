@@ -11,6 +11,7 @@ const { selectSellableItems, selectSellablePokemon } = require('./sell-policy');
 const { READ_DEPOT_SCRIPT } = require('./depot-script');
 const { READ_POKEMON_SCRIPT } = require('./pokemon-script');
 const { READ_HUNTS_SCRIPT } = require('./hunt-script');
+const { userScript } = require('./user-script');
 
 const VALID_STATUSES = new Set(['online', 'stale', 'login_required']);
 
@@ -41,6 +42,7 @@ class GameAdapter extends EventEmitter {
   detectGameLogin() { return this.#action(DETECT_GAME_LOGIN_SCRIPT); }
   fillGameCredentials(input) { return this.#action(FILL_GAME_LOGIN_SCRIPT(input || {})); }
   submitGameLogin() { return this.#action(SUBMIT_GAME_LOGIN_SCRIPT); }
+  runUserScript(input) { return this.#action(userScript(input?.script)); }
   reload() { return this.#run(async () => { if (typeof this.surface.reload !== 'function') throw error('RELOAD_UNAVAILABLE', 'A superfície não suporta reload'); this.bootstrapped = false; await this.surface.reload(); return { ok: true, accountId: this.accountId }; }); }
   async recover() {
     const hunt = this.lastHunt ? { ...this.lastHunt } : null;
