@@ -7,11 +7,14 @@ const { GAME_ORIGIN, MAX_ACCOUNTS } = require('../shared/constants');
 const { GameViewManager } = require('./game-view-manager');
 const { GameAdapter } = require('../game/game-adapter');
 const { AccountStatePoller } = require('./account-state-poller');
+const { AuthService } = require('./auth-service');
+const { AuthRuntime } = require('./auth-runtime');
 
 let mainWindow;
 let gameViews;
 const gameAdapters = new Map();
 const accountPollers = new Map();
+let authRuntime;
 
 function isTrustedUi(event) {
   try { return String(event.senderFrame?.url || '').startsWith('file://'); } catch { return false; }
@@ -19,6 +22,39 @@ function isTrustedUi(event) {
 
 function credentialsPath() { return path.join(app.getPath('userData'), 'credentials.enc'); }
 function profilesPath() { return path.join(app.getPath('userData'), 'account-profiles.json'); }
+function authSessionPath() { return path.join(app.getPath('userData'), 'auth-session.enc'); }
+function licenseCachePath() { return path.join(app.getPath('userData'), 'license-cache.enc'); }
+
+const tokenStore = {
+  async load() {
+    try {
+      const raw = fs.readFileSync(authSessionPath());
+      return JSON.parse(safeStorage.decryptString(raw));
+    } catch { return null; }
+  },
+  async save(value) {
+    if (!safeStorage.isEncryptionAvailable()) throw new Error('secure_storage_unavailable');
+    const target = authSessionPath();
+    fs.writeFileSync(`${target}.tmp`, safeStorage.encryptString(JSON.stringify(value)));
+    fs.renameSync(`${target}.tmp`, target);
+  },
+  async clear() {
+    try { fs.rmSync(authSessionPath(), { force: true }); } catch {}
+  }
+};
+
+const licenseStore = {
+  async load() {
+    try { return JSON.parse(safeStorage.decryptString(fs.readFileSync(licenseCachePath()))); } catch { return null; }
+  },
+  async save(value) {
+    if (!safeStorage.isEncryptionAvailable()) throw new Error('secure_storage_unavailable');
+    const target = licenseCachePath();
+    fs.writeFileSync(`${target}.tmp`, safeStorage.encryptString(JSON.stringify(value)));
+    fs.renameSync(`${target}.tmp`, target);
+  },
+  async clear() { try { fs.rmSync(licenseCachePath(), { force: true }); } catch {} }
+};
 
 function normalizeProfiles(value) {
   if (!Array.isArray(value)) return [];
@@ -64,7 +100,17 @@ function createWindow() {
   gameViews.on('removed', (payload) => { accountPollers.get(payload.id)?.dispose(); accountPollers.delete(payload.id); gameAdapters.delete(payload.id); mainWindow.webContents.send('account:removed', payload); });
 }
 
+function createAuthRuntime() {
+  const baseUrl = String(process.env.DARKGRID_AUTH_URL || '').trim();
+  const publicKey = String(process.env.DARKGRID_LICENSE_PUBLIC_KEY || '').replace(/\\n/g, '\n');
+  if (!baseUrl || !publicKey) return null;
+  try { return new AuthRuntime({ service: new AuthService({ baseUrl, tokenStore }), publicKey, licenseStore }); } catch { return null; }
+}
+
 ipcMain.handle('app:info', (event) => isTrustedUi(event) ? ({ version: app.getVersion(), platform: process.platform }) : null);
+ipcMain.handle('auth:status', async (event) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; if (!authRuntime) return { ok: false, reason: 'auth_server_not_configured' }; try { return await authRuntime.getStatus(); } catch (cause) { return { ok: false, reason: cause.code || 'auth_required' }; } });
+ipcMain.handle('auth:login', async (event, email, password) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; if (!authRuntime) return { ok: false, reason: 'auth_server_not_configured' }; try { return await authRuntime.login(email, password); } catch (cause) { return { ok: false, reason: cause.code || cause.message || 'auth_failed' }; } });
+ipcMain.handle('auth:logout', async (event) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; if (!authRuntime) return { ok: true }; try { return await authRuntime.logout(); } catch (cause) { return { ok: false, reason: cause.code || 'logout_failed' }; } });
 
 ipcMain.handle('credentials:load', (event) => {
   if (!isTrustedUi(event)) return [];
@@ -115,6 +161,7 @@ ipcMain.handle('account:state', async (event, id) => { if (!isTrustedUi(event)) 
 ipcMain.handle('account:action', async (event, id, action, input) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; const adapter = gameAdapters.get(String(id)); if (!adapter || !['openDepot', 'openMarket', 'travelToHunt'].includes(String(action))) return { ok: false, reason: 'action_not_allowed' }; try { return { ok: true, result: await adapter[action](input || {}) }; } catch (cause) { return { ok: false, reason: cause.code || 'action_failed' }; } });
 
 app.whenReady().then(() => {
+  authRuntime = createAuthRuntime();
   for (let i = 1; i <= MAX_ACCOUNTS; i++) {
     try { session.fromPartition(`persist:darkgrid-account-${i}`).setPermissionRequestHandler((_wc, _permission, callback) => callback(false)); } catch {}
   }

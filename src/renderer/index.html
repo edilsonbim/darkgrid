@@ -18,12 +18,26 @@
       <div class="sidebar-foot"><span class="status-dot"></span><span id="connectionLabel">Modo local</span></div>
     </aside>
     <main class="main-content">
-      <header class="topbar"><div><p class="eyebrow">DASHBOARD</p><h1>Visão geral</h1></div><div class="top-actions"><button class="ghost-button" id="refreshButton">Atualizar</button><button class="primary-button" id="loginButton">Adicionar conta</button></div></header>
+      <header class="topbar"><div><p class="eyebrow">DASHBOARD</p><h1>Visão geral</h1></div><div class="top-actions"><span class="license-badge" id="licenseLabel">Licença não verificada</span><button class="ghost-button" id="refreshButton">Atualizar</button><button class="primary-button" id="loginButton">Adicionar conta</button></div></header>
       <section class="summary-grid" aria-label="Resumo"><article class="summary-card"><span>Contas ativas</span><strong id="activeCount">0/4</strong><small>nenhuma sessão iniciada</small></article><article class="summary-card"><span>Status do farm</span><strong class="muted-value">Aguardando</strong><small>conecte uma conta para começar</small></article><article class="summary-card"><span>Desempenho</span><strong class="accent-value">Eco</strong><small>painel leve ativado</small></article></section>
       <section class="section-heading"><div><p class="eyebrow">SESSÕES</p><h2>Contas</h2></div><button class="ghost-button" id="manageAccountsButton">Gerenciar</button></section>
       <section class="accounts-grid" id="accountsGrid"></section>
       <section class="empty-state" id="emptyState"><div class="empty-icon">＋</div><h2>Comece adicionando uma conta</h2><p>O DarkGrid mantém cada sessão isolada e mostra apenas o que importa para o seu farm.</p><button class="primary-button" id="emptyLoginButton">Adicionar conta</button></section>
     </main>
+  </div>
+  <div class="modal-backdrop" id="authModal" hidden>
+    <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <button class="modal-close" id="authClose" aria-label="Fechar">×</button>
+      <p class="eyebrow">DARKGRID ACCOUNT</p>
+      <h2 id="authTitle">Entrar no DarkGrid</h2>
+      <p class="modal-copy">A assinatura do produto é verificada antes de liberar os recursos do painel.</p>
+      <form id="authForm">
+        <label>E-mail<input id="authEmail" type="email" autocomplete="username" required></label>
+        <label>Senha<input id="authPassword" type="password" autocomplete="current-password" required></label>
+        <p class="form-error" id="authError" role="alert"></p>
+        <button class="primary-button full-width" type="submit">Entrar e verificar licença</button>
+      </form>
+    </section>
   </div>
   <script src="./app.js"></script>
 </body>

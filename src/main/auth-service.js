@@ -14,7 +14,7 @@ class AuthService extends EventEmitter {
 
   async login(email, password) {
     const response = await this.#json('/v1/auth/login', { method: 'POST', body: { email, password } });
-    this.#setSession(response);
+    await this.#setSession(response);
     return this.session;
   }
 
@@ -22,7 +22,7 @@ class AuthService extends EventEmitter {
     const stored = this.session || await this.tokenStore.load();
     if (!stored?.refreshToken) throw new Error('auth_required');
     const response = await this.#json('/v1/auth/refresh', { method: 'POST', body: { refreshToken: stored.refreshToken } });
-    this.#setSession(response);
+    await this.#setSession(response);
     return this.session;
   }
 
@@ -47,10 +47,10 @@ class AuthService extends EventEmitter {
     throw new Error('auth_required');
   }
 
-  #setSession(response) {
+  async #setSession(response) {
     if (!response || typeof response.accessToken !== 'string' || typeof response.refreshToken !== 'string') throw new Error('auth_invalid_response');
     this.session = { accessToken: response.accessToken, refreshToken: response.refreshToken, expiresAt: Number(response.expiresAt) || 0 };
-    this.tokenStore.save(this.session);
+    await this.tokenStore.save(this.session);
     this.emit('session', { expiresAt: this.session.expiresAt });
   }
 
