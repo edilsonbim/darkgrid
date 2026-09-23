@@ -8,6 +8,7 @@ const { GO_TOWN_SCRIPT } = require('./town-script');
 const { DETECT_GAME_LOGIN_SCRIPT, FILL_GAME_LOGIN_SCRIPT, SUBMIT_GAME_LOGIN_SCRIPT } = require('./game-login-script');
 const { BUY_BALLS_SCRIPT, SELL_ITEMS_SCRIPT, SELL_POKEMON_SCRIPT, SELL_STONE_SCRIPT } = require('./operation-scripts');
 const { selectSellableItems, selectSellablePokemon } = require('./sell-policy');
+const { READ_DEPOT_SCRIPT } = require('./depot-script');
 
 const VALID_STATUSES = new Set(['online', 'stale', 'login_required']);
 
@@ -30,6 +31,7 @@ class GameAdapter extends EventEmitter {
   getState() { return this.#run(async () => { if (!this.bootstrapped) await this.#execute(BOOTSTRAP_SCRIPT); const raw = await this.#execute(READ_STATE_SCRIPT); return this.#normalizeState(raw); }); }
   openMarket() { return this.#action(OPEN_MARKET_SCRIPT); }
   openDepot() { return this.#action(OPEN_DEPOT_SCRIPT); }
+  readDepot() { return this.#action(READ_DEPOT_SCRIPT); }
   travelToHunt({ slug, name }) { return this.#action(travelScript(slug, name)); }
   returnToLastHunt(input) { return this.#action(returnHuntScript(input || {})); }
   detectGameLogin() { return this.#action(DETECT_GAME_LOGIN_SCRIPT); }
