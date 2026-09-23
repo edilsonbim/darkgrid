@@ -18,7 +18,7 @@
       <div class="sidebar-foot"><span class="status-dot"></span><span id="connectionLabel">Modo local</span></div>
     </aside>
     <main class="main-content">
-      <header class="topbar"><div><p class="eyebrow">DASHBOARD</p><h1>Visão geral</h1></div><div class="top-actions"><span class="license-badge" id="licenseLabel">Licença não verificada</span><button class="ghost-button" id="logoutButton" hidden>Sair</button><button class="ghost-button" id="tierlistButton">Tierlist</button><button class="ghost-button" id="refreshButton">Atualizar</button><button class="primary-button" id="loginButton">Adicionar conta</button></div></header>
+      <header class="topbar"><div><p class="eyebrow">DASHBOARD</p><h1>Visão geral</h1></div><div class="top-actions"><span class="license-badge" id="licenseLabel">Licença não verificada</span><button class="ghost-button" id="logoutButton" hidden>Sair</button><button class="ghost-button" id="analyzerButton">Analyzer</button><button class="ghost-button" id="tierlistButton">Tierlist</button><button class="ghost-button" id="refreshButton">Atualizar</button><button class="primary-button" id="loginButton">Adicionar conta</button></div></header>
       <section class="summary-grid" aria-label="Resumo"><article class="summary-card"><span>Contas ativas</span><strong id="activeCount">0/4</strong><small id="activeSummary">nenhuma sessão iniciada</small></article><article class="summary-card"><span>Status do farm</span><strong class="muted-value" id="farmStatus">Aguardando</strong><small id="farmSummary">conecte uma conta para começar</small></article><article class="summary-card"><span>Desempenho</span><strong class="accent-value" id="performanceValue">Eco</strong><small id="performanceSummary">painel leve ativado</small></article></section>
       <section class="section-heading"><div><p class="eyebrow">SESSÕES</p><h2>Contas</h2></div><button class="ghost-button" id="manageAccountsButton">Gerenciar</button></section>
       <section class="accounts-grid" id="accountsGrid"></section>
@@ -128,6 +128,16 @@
       <h2 id="tierlistTitle">Tierlist</h2>
       <p class="modal-copy" id="tierlistStatus">Conecte uma conta para carregar os dados do jogo.</p>
       <div class="tierlist-list" id="tierlistList"><p class="history-empty">Nenhuma análise carregada.</p></div>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="analyzerModal" hidden>
+    <section class="auth-modal analyzer-modal" role="dialog" aria-modal="true" aria-labelledby="analyzerTitle">
+      <button class="modal-close" id="analyzerClose" aria-label="Fechar">×</button>
+      <p class="eyebrow">HUNT ANALYZER</p>
+      <h2 id="analyzerTitle">Sessão atual</h2>
+      <p class="modal-copy" id="analyzerStatus">Atualize uma conta conectada para ler os dados.</p>
+      <div class="analyzer-grid" id="analyzerGrid"></div>
+      <div class="inventory-list" id="analyzerDrops"><p class="history-empty">Nenhum drop registrado.</p></div>
     </section>
   </div>
   <div class="alert-toasts" id="alertToasts" aria-live="polite" aria-atomic="false"></div>

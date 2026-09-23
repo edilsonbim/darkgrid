@@ -25,4 +25,5 @@ assert.match(READ_HUNTS_SCRIPT, /\/api\/game\/map-markers/);
 for (const script of [BUY_BALLS_SCRIPT({ ballId: 1, quantity: 10 }), SELL_ITEMS_SCRIPT([{ itemId: 1, qty: 2 }]), SELL_POKEMON_SCRIPT(['poke-1']), SELL_STONE_SCRIPT({ itemId: 1, quantity: 1 })]) assert.doesNotThrow(() => new Function(script), 'operation script deve ser JavaScript válido');
 assert.match(BOOTSTRAP_SCRIPT, /__darkGrid/);
 assert.match(READ_STATE_SCRIPT, /collectorVersion/);
+assert.match(READ_STATE_SCRIPT, /serverBacked/);
 console.log('DarkGrid page scripts: contratos injetáveis com sintaxe válida');
