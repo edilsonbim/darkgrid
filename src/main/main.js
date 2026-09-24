@@ -169,7 +169,8 @@ function createAuthRuntime() {
   const baseUrl = String(process.env.DARKGRID_AUTH_URL || '').trim();
   const publicKey = String(process.env.DARKGRID_LICENSE_PUBLIC_KEY || '').replace(/\\n/g, '\n');
   if (!baseUrl || !publicKey) return null;
-  try { return new AuthRuntime({ service: new AuthService({ baseUrl, tokenStore, allowInsecureLocalhost: process.env.NODE_ENV !== 'production' }), publicKey, licenseStore, deviceId: installationDeviceId() }); } catch { return null; }
+  const allowInsecureLocalhost = process.env.DARKGRID_ALLOW_INSECURE_LOCALHOST === '1' || process.env.NODE_ENV === 'development';
+  try { return new AuthRuntime({ service: new AuthService({ baseUrl, tokenStore, allowInsecureLocalhost }), publicKey, licenseStore, deviceId: installationDeviceId() }); } catch { return null; }
 }
 
 ipcMain.handle('app:info', (event) => isTrustedUi(event) ? ({ version: app.getVersion(), platform: process.platform }) : null);

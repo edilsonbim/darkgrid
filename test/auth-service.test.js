@@ -40,6 +40,7 @@ function response(body, ok = true, status = 200) { return { ok, status, async js
   const rejected = new AuthService({ baseUrl: 'https://api.darkgrid.invalid', tokenStore: new Store(), request: async () => response({ code: 'license_revoked' }, false, 403) });
   await assert.rejects(() => rejected.login('user@example.invalid', 'password'), error => error.code === 'license_revoked' && error.status === 403);
   assert.throws(() => new AuthService({ baseUrl: 'http://api.darkgrid.invalid', tokenStore: store, request: async () => response({}) }), error => error.code === 'auth_url_https_required');
+  assert.throws(() => new AuthService({ baseUrl: 'http://localhost:3010', tokenStore: store, request: async () => response({}) }), error => error.code === 'auth_url_https_required');
   assert.doesNotThrow(() => new AuthService({ baseUrl: 'http://localhost:3010', allowInsecureLocalhost: true, tokenStore: store, request: async () => response({}) }));
   console.log('DarkGrid auth: login, licença, refresh rotativo e logout OK');
 })().catch((error) => { console.error(error); process.exitCode = 1; });

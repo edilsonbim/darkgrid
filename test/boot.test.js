@@ -12,4 +12,5 @@ assert.match(fs.readFileSync(path.join(root, 'package.json'), 'utf8'), /auth:dev
 assert.match(fs.readFileSync(path.join(root, 'src/main/main.js'), 'utf8'), /createTray/);
 assert.match(fs.readFileSync(path.join(root, 'src/main/main.js'), 'utf8'), /Mostrar DarkGrid/);
 assert.match(fs.readFileSync(path.join(root, 'src/main/main.js'), 'utf8'), /setLoginItemSettings/);
+assert.match(fs.readFileSync(path.join(root, 'src/main/main.js'), 'utf8'), /DARKGRID_ALLOW_INSECURE_LOCALHOST/);
 console.log('DarkGrid boot: estrutura inicial OK');

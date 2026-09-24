@@ -39,6 +39,14 @@ Para testar o fluxo completo de login/licença localmente, existe um servidor ef
 npm run auth:dev
 ```
 
+Ao apontar o Electron para esse servidor HTTP local, habilite explicitamente a exceção apenas no processo de desenvolvimento:
+
+```powershell
+$env:DARKGRID_ALLOW_INSECURE_LOCALHOST = "1"
+```
+
+Essa variável não deve existir no ambiente de produção; endpoints públicos de produção precisam usar HTTPS.
+
 Ele imprime a URL, a chave pública e as credenciais de demonstração. Os dados ficam apenas em memória; esse servidor não é backend de produção e não deve ser exposto na internet.
 
 ## Princípios
