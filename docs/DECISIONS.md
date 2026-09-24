@@ -2,7 +2,7 @@
 
 ## D1 — Produto independente
 
-O PokeGrid atual permanece intacto e não é alterado pelo DarkGrid. O novo produto reutiliza somente conhecimento funcional e contratos de comportamento, com identidade, estrutura e ciclo de distribuição próprios.
+O DarkGrid possui identidade, estrutura e ciclo de distribuição próprios. A integração com o jogo é isolada no adaptador e não cria dependência de outro aplicativo.
 
 ## D2 — Electron na V1
 

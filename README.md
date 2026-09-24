@@ -41,7 +41,7 @@ Ele imprime a URL, a chave pública e as credenciais de demonstração. Os dados
 
 ## Princípios
 
-- O PokeGrid atual permanece intacto e serve apenas como referência funcional.
+- O DarkGrid possui identidade, estrutura e ciclo de distribuição próprios.
 - Nenhuma senha deve sair do computador do usuário.
 - Licenciamento será validado por servidor; não haverá segredo confiável embutido no executável.
 - Cada conta terá uma sessão isolada.

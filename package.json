@@ -19,7 +19,7 @@
     "appId": "com.darkgrid.app",
     "productName": "DarkGrid",
     "asar": true,
-    "files": ["src/**/*", "package.json", "README.md", "docs/**/*"],
+    "files": ["src/**/*", "package.json", "README.md", "LICENSE.md", "THIRD-PARTY-NOTICES.md", "docs/**/*"],
     "directories": { "output": "release" },
     "win": { "target": ["nsis", "portable"], "artifactName": "DarkGrid-${version}-${arch}.${ext}" },
     "nsis": { "artifactName": "DarkGrid-${version}-setup-${arch}.${ext}", "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true },
