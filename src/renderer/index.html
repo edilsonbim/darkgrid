@@ -8,7 +8,7 @@
 </head>
 <body>
   <header class="classic-topbar">
-    <div class="classic-brand"><span class="brand-mark" aria-hidden="true">D</span><strong>DARKGRID</strong><small id="appVersion"></small></div>
+    <div class="classic-brand"><img class="brand-ball" src="assets/darkgrid-pokeball.png" alt="" aria-hidden="true"><strong>DARKGRID</strong><small id="appVersion"></small></div>
     <button class="primary-button classic-button" id="loginButton" title="Criar um novo painel de conta">▶ Logar equipe</button>
     <button class="ghost-button classic-button" id="manageAccountsButton" title="Gerenciar painéis e contas">👤 Treinadores</button>
     <button class="ghost-button classic-button" id="refreshButton" title="Atualizar todos os painéis">⟳ Atualizar tudo</button>
@@ -36,7 +36,7 @@
       <div class="simple-section simple-sec-kpis"><div class="simple-kpis" id="simpleKpis"></div></div>
       <div class="simple-section simple-sec-today"><div class="simple-section-title">HOJE</div><div class="simple-today" id="simpleToday"></div></div>
       <div class="simple-section simple-sec-table"><div class="simple-section-title">POR CONTA · CLIQUE NA LINHA PARA ABRIR O JOGO</div><div class="simple-table-wrap"><table class="simple-table"><thead><tr><th>CONTA</th><th>POKÉMON</th><th>HUNT</th><th>GOLD/H</th><th>XP/H</th><th>KILLS/H</th><th>CAPTURAS</th><th>STATUS</th></tr></thead><tbody id="simpleAccounts"></tbody></table></div></div>
-      <div class="simple-section simple-sec-items"><div class="simple-section-title">POKÉBOLAS E CURAS POR PERSONAGEM · +1000</div><div class="simple-table-wrap"><table class="simple-table simple-items-table"><thead><tr><th>PERSONAGEM</th><th>POKÉBOLA</th><th>GREAT BALL</th><th>ULTRA BALL</th><th>POTIONS</th><th>REVIVES</th><th>AÇÕES</th></tr></thead><tbody id="simpleItems"></tbody></table></div></div>
+      <div class="simple-section simple-sec-items"><div class="simple-section-title">POKÉBOLAS E CURAS POR PERSONAGEM · +1000 COMPRA PARA A CONTA DA LINHA</div><div class="simple-table-wrap"><table class="simple-table simple-items-table"><thead id="simpleItemsHead"></thead><tbody id="simpleItems"></tbody><tfoot id="simpleItemsFoot"></tfoot></table></div></div>
       <div class="simple-section simple-sec-team"><div class="simple-section-title">TIMES & IV · PASSE O MOUSE SOBRE O POKÉMON PARA VER OS ATRIBUTOS</div><div class="simple-team-grid" id="simpleTeams"></div></div>
     </section>
     <div class="iv-hover-card" id="ivHoverCard" hidden></div>
@@ -101,7 +101,7 @@
       <h2 id="operationsTitle">Operações</h2>
       <p class="modal-copy" id="operationsAccountLabel">Conta selecionada</p>
       <div class="operation-section">
-        <h3>Comprar Pokébolas</h3>
+        <h3><img class="section-ball-icon" src="assets/darkgrid-pokeball.png" alt=""> Comprar Pokébolas</h3>
         <form id="buyBallsForm" class="operation-form">
           <label>Pokébola<select id="ballId" required><option value="1">Pokébola</option></select></label>
           <label>Quantidade<input id="ballQuantity" type="number" min="1" step="1" value="10" required></label>

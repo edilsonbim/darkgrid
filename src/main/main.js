@@ -37,8 +37,7 @@ function isTrustedUi(event) {
 
 function createTray() {
   if (tray) return;
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32" rx="8" fill="#7c8cff"/><path d="M9 23V9h5l2 3 2-3h5v14h-4v-8l-3 4-3-4v8z" fill="#080b12"/></svg>';
-  const icon = nativeImage.createFromDataURL(`data:image/svg+xml,${encodeURIComponent(svg)}`);
+  const icon = nativeImage.createFromPath(path.join(__dirname, '../renderer/assets/darkgrid-pokeball.png'));
   tray = new Tray(icon);
   tray.setToolTip('DarkGrid');
   tray.setContextMenu(Menu.buildFromTemplate([
@@ -144,6 +143,7 @@ function createWindow() {
     show: false,
     autoHideMenuBar: true,
     backgroundColor: '#080b12',
+    icon: path.join(__dirname, '../renderer/assets/darkgrid-pokeball.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
