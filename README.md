@@ -23,6 +23,8 @@ npm start
 
 O backend e a chave pública de produção não fazem parte deste repositório. Sem essa configuração, o aplicativo permanece explicitamente em “Servidor não configurado” e não restaura contas. Em produção, `DARKGRID_AUTH_URL` deve ser HTTPS; `http://localhost` só é aceito para desenvolvimento local. A licença também fica vinculada ao identificador protegido da instalação.
 
+O contrato necessário para implementar a API de produção está em [docs/AUTH-API-CONTRACT.md](docs/AUTH-API-CONTRACT.md). O servidor local de desenvolvimento não substitui essa API.
+
 Para gerar os executáveis Windows:
 
 ```powershell
