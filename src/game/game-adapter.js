@@ -27,7 +27,7 @@ class GameAdapter extends EventEmitter {
   constructor({ accountId, surface, allowedOrigin, executionTimeoutMs = 10000 }) {
     super();
     if (!accountId || !surface || !allowedOrigin) throw new TypeError('GameAdapter requer accountId, surface e allowedOrigin');
-    this.accountId = String(accountId); this.surface = surface; this.allowedOrigin = allowedOrigin; this.executionTimeoutMs = executionTimeoutMs; this.queue = new SerialQueue(); this.bootstrapped = false; this.lastHunt = null; this.huntCatalogCache = null; this.huntCatalogCachedAt = 0;
+    this.accountId = String(accountId); this.surface = surface; this.allowedOrigin = allowedOrigin; this.executionTimeoutMs = executionTimeoutMs; this.queue = new SerialQueue(); this.bootstrapped = false; this.lastHunt = null; this.lastState = null; this.lastLoginEvidence = null; this.huntCatalogCache = null; this.huntCatalogCachedAt = 0;
   }
 
   bootstrap() { return this.#run(() => this.#execute(BOOTSTRAP_SCRIPT)).then((result) => { if (!result?.ok) throw error('BOOTSTRAP_FAILED', 'Coletor do jogo não foi inicializado'); this.bootstrapped = true; return result; }); }
@@ -43,6 +43,16 @@ class GameAdapter extends EventEmitter {
   fillGameCredentials(input) { return this.#action(FILL_GAME_LOGIN_SCRIPT(input || {})); }
   submitGameLogin() { return this.#action(SUBMIT_GAME_LOGIN_SCRIPT); }
   runUserScript(input) { return this.#action(userScript(input?.script)); }
+  async shouldAutoRecover(cause) {
+    if (!['SURFACE_TIMEOUT', 'SURFACE_EXECUTION_FAILED'].includes(String(cause?.code || ''))) return false;
+    if (this.lastState?.status === 'login_required' || this.lastLoginEvidence?.challengePresent || this.lastLoginEvidence?.twoFactorPresent) return false;
+    try {
+      const login = this.#validateActionResult(await this.#run(() => this.#execute(DETECT_GAME_LOGIN_SCRIPT)));
+      this.lastLoginEvidence = login;
+      if (login.loginPage || login.challengePresent || login.twoFactorPresent) return false;
+      return this.lastState?.status === 'online' || this.lastState?.status === 'stale';
+    } catch { return false; }
+  }
   reload() { return this.#run(async () => { if (typeof this.surface.reload !== 'function') throw error('RELOAD_UNAVAILABLE', 'A superfície não suporta reload'); this.bootstrapped = false; await this.surface.reload(); return { ok: true, accountId: this.accountId }; }); }
   async recover() {
     const hunt = this.lastHunt ? { ...this.lastHunt } : null;
@@ -65,8 +75,28 @@ class GameAdapter extends EventEmitter {
   sellStone(input) { return this.#actionWithTown(SELL_STONE_SCRIPT(input || {})); }
 
   #action(script) { return this.#run(async () => ({ ...this.#validateActionResult(await this.#execute(script)), accountId: this.accountId })); }
-  #actionWithTown(script) { return this.#run(async () => { const first = this.#validateActionResult(await this.#execute(script)); if (!first.requiresTown) return { ...first, accountId: this.accountId }; const town = this.#validateActionResult(await this.#execute(GO_TOWN_SCRIPT)); if (!town.ok) return { ...first, ok: false, reason: town.reason || 'town_not_confirmed', town, accountId: this.accountId }; const retry = this.#validateActionResult(await this.#execute(script)); if (!retry.ok) return { ...retry, town, accountId: this.accountId }; let returned = { ok: true, skipped: true }; if (this.lastHunt?.slug) returned = this.#validateActionResult(await this.#execute(returnHuntScript(this.lastHunt))); return { ...retry, ok: returned.ok, town, returned, accountId: this.accountId }; }); }
-  #validateActionResult(result) { if (!result || typeof result !== 'object' || typeof result.ok !== 'boolean') throw error('INVALID_ACTION_RESULT', 'O jogo devolveu um resultado de ação inválido'); return result; }
+  #actionWithTown(script) { return this.#run(async () => {
+    const first = this.#validateActionResult(await this.#execute(script));
+    if (!first.requiresTown) return { ...first, accountId: this.accountId };
+    if (first.operationStatus !== 'failed' || first.retryAllowed === false || this.#confirmedAmount(first) > 0) {
+      return { ...first, ok: false, retrySuppressed: true, retryReason: 'partial_confirmation', returnStatus: 'not_attempted', accountId: this.accountId };
+    }
+    const town = this.#validateActionResult(await this.#execute(GO_TOWN_SCRIPT));
+    if (!town.ok) return { ...first, ok: false, operationStatus: 'failed', reason: town.reason || 'town_not_confirmed', town, returnStatus: 'not_attempted', accountId: this.accountId };
+    const retry = this.#validateActionResult(await this.#execute(script));
+    const result = { ...retry, town, retryAttempted: true };
+    if (!this.lastHunt?.slug) return { ...result, returnStatus: 'not_required', accountId: this.accountId };
+    const returned = this.#validateActionResult(await this.#execute(returnHuntScript(this.lastHunt)));
+    const returnStatus = returned.ok ? 'confirmed' : 'failed';
+    return { ...result, ok: Boolean(result.ok && returned.ok), returnStatus, returned, returnReason: returned.ok ? undefined : (returned.reason || 'return_not_confirmed'), accountId: this.accountId };
+  }); }
+  #confirmedAmount(result) { return Math.max(0, Number(result?.bought ?? result?.soldCount ?? result?.sold ?? 0) || 0); }
+  #validateActionResult(result) {
+    if (!result || typeof result !== 'object' || typeof result.ok !== 'boolean') throw error('INVALID_ACTION_RESULT', 'O jogo devolveu um resultado de ação inválido');
+    const operationStatus = ['completed', 'partial', 'failed'].includes(result.operationStatus) ? result.operationStatus : (result.ok ? 'completed' : 'failed');
+    const operationOk = operationStatus === 'completed';
+    return { ...result, operationStatus, operationOk, ok: Boolean(result.ok && operationOk) };
+  }
   #run(task) { return this.queue.run(async () => { try { return await task(); } catch (cause) { if (cause?.code) throw cause; throw error('SURFACE_EXECUTION_FAILED', cause?.message || 'Falha ao executar ação no painel', cause); } }); }
   async #execute(script) {
     if (typeof this.surface.isDestroyed === 'function' && this.surface.isDestroyed()) throw error('SURFACE_DESTROYED', 'O painel da conta foi destruído');
@@ -83,6 +113,8 @@ class GameAdapter extends EventEmitter {
     const n = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
     const hunt = raw.huntSlug ? { slug: String(raw.huntSlug), name: String(raw.huntSlug).replace(/[_-]+/g, ' ') } : null;
     if (hunt) this.lastHunt = hunt;
+    if (raw.status === 'online' || raw.status === 'stale') this.lastLoginEvidence = null;
+    this.lastState = { status: raw.status, hunt: hunt ? { ...hunt } : null, updatedAt: Date.now() };
     const inventory = Array.isArray(raw.inventory) ? raw.inventory.slice(0, 200).map((item) => ({ itemId: String(item?.itemId || '').slice(0, 32), name: String(item?.name || '').slice(0, 80), category: String(item?.category || '').slice(0, 40), quantity: Math.max(0, n(item?.quantity)) })).filter((item) => item.itemId && item.quantity > 0) : [];
     const team = Array.isArray(raw.team) ? raw.team.slice(0, 6).map((pokemon) => ({ id: String(pokemon?.id || '').slice(0, 64), name: String(pokemon?.name || 'Pokémon').slice(0, 60), level: Math.max(0, n(pokemon?.level)), hp: Math.max(0, n(pokemon?.hp)), maxHp: Math.max(0, n(pokemon?.maxHp)), ivTotal: Math.max(0, n(pokemon?.ivTotal)), quality: Math.max(0, n(pokemon?.quality)), shiny: Boolean(pokemon?.shiny), leader: Boolean(pokemon?.leader), starter: Boolean(pokemon?.starter), locked: Boolean(pokemon?.locked) })).filter((pokemon) => pokemon.id) : [];
     const metrics = raw.metrics && typeof raw.metrics === 'object' ? { kills: Math.max(0, n(raw.metrics.kills)), xp: Math.max(0, n(raw.metrics.xp)), captures: Math.max(0, n(raw.metrics.captures)), shiny: Math.max(0, n(raw.metrics.shiny)), xph: Math.max(0, n(raw.metrics.xph)), kph: Math.max(0, n(raw.metrics.kph)), gph: n(raw.metrics.gph), balance: n(raw.metrics.balance), lootGold: Math.max(0, n(raw.metrics.lootGold)), capturesGold: Math.max(0, n(raw.metrics.capturesGold)), supplyGold: Math.max(0, n(raw.metrics.supplyGold)), ballsUsed: Math.max(0, n(raw.metrics.ballsUsed)), potionsUsed: Math.max(0, n(raw.metrics.potionsUsed)), seconds: Math.max(0, n(raw.metrics.seconds)), serverBacked: Boolean(raw.metrics.serverBacked) } : {};

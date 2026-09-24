@@ -62,5 +62,28 @@ assert.equal(allowedOrigin('https://poke.idleworld.online.evil.test/game', 'http
 
   const blocked = new GameAdapter({ accountId: 'account-c', surface: new Surface({ origin: 'https://evil.test', execute: async () => ({ ok: true }) }), allowedOrigin: 'https://poke.idleworld.online' });
   await assert.rejects(() => blocked.getState(), (cause) => cause.code === 'ORIGIN_NOT_ALLOWED');
+
+  const safeRecoverySurface = new Surface({ execute: async (script) => {
+    if (script.includes('collectorVersion')) return { ok: true, status: 'online', huntSlug: 'route-1' };
+    if (script.includes('twoFactorPresent')) return { ok: true, loginPage: false, challengePresent: false, challengeSolved: false, twoFactorPresent: false };
+    return { ok: true };
+  } });
+  const safeRecoveryAdapter = new GameAdapter({ accountId: 'account-safe-recovery', surface: safeRecoverySurface, allowedOrigin: 'https://poke.idleworld.online' });
+  await safeRecoveryAdapter.getState();
+  assert.equal(await safeRecoveryAdapter.shouldAutoRecover({ code: 'SURFACE_TIMEOUT' }), true, 'recovery requer estado online e página sem login/desafio');
+
+  const challengeSurface = new Surface({ execute: async (script) => {
+    if (script.includes('collectorVersion')) return { ok: true, status: 'online', huntSlug: 'route-1' };
+    if (script.includes('twoFactorPresent')) return { ok: true, loginPage: true, challengePresent: true, challengeSolved: false, twoFactorPresent: false };
+    return { ok: true };
+  } });
+  const challengeAdapter = new GameAdapter({ accountId: 'account-challenge', surface: challengeSurface, allowedOrigin: 'https://poke.idleworld.online' });
+  await challengeAdapter.getState();
+  assert.equal(await challengeAdapter.shouldAutoRecover({ code: 'SURFACE_TIMEOUT' }), false, 'captcha/login humano não pode ser contornado por recovery');
+
+  const loginSurface = new Surface({ execute: async (script) => { if (script.includes('collectorVersion')) return { ok: true, status: 'login_required' }; return { ok: true }; } });
+  const loginAdapter = new GameAdapter({ accountId: 'account-login-required', surface: loginSurface, allowedOrigin: 'https://poke.idleworld.online' });
+  await loginAdapter.getState();
+  assert.equal(await loginAdapter.shouldAutoRecover({ code: 'SURFACE_TIMEOUT' }), false, 'login_required exige ação explícita');
   console.log('DarkGrid adapter: bootstrap, snapshot, origem e fila por conta OK');
 })().catch((cause) => { console.error(cause); process.exitCode = 1; });
