@@ -130,7 +130,9 @@ class GameViewManager extends EventEmitter {
     const rows = Math.ceil(count / columns);
     const ordered = [...this.views.values()];
     const index = ordered.indexOf(record);
-    const gap = 8;
+    // Deve permanecer alinhado ao grid desenhado pelo renderer; qualquer diferença
+    // desloca a segunda linha e faz um WebContentsView invadir o cabeçalho seguinte.
+    const gap = 6;
     const width = Math.max(240, Math.floor((this.layout.width - gap * (columns - 1)) / columns));
     const height = Math.max(180, Math.floor((this.layout.height - gap * (rows - 1)) / rows));
     record.view.setBounds({ x: this.layout.x + (index % columns) * (width + gap), y: this.layout.y + Math.floor(index / columns) * (height + gap), width, height });

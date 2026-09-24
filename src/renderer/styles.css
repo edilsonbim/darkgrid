@@ -87,6 +87,20 @@ body.panels-active #accountsGrid .classic-panel .account-name small, body.panels
 body.panels-active #accountsGrid .classic-panel .account-name strong { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 body.panels-active #accountsGrid .classic-panel .account-actions { padding:3px 5px; gap:3px; }
 body.panels-active #accountsGrid .classic-panel .account-status, body.panels-active #accountsGrid .classic-panel .ball-count, body.panels-active #accountsGrid .classic-panel .buy-button, body.panels-active #accountsGrid .classic-panel .open-button, body.panels-active #accountsGrid .classic-panel .danger-button { display:none; }
+body.simple-mode .classic-summary, body.simple-mode .classic-heading, body.simple-mode #accountsGrid, body.simple-mode .empty-state, body.simple-mode .history-section, body.simple-mode .settings-panel { display:none!important; }
+body.simple-mode .simple-dashboard { display:block; padding:8px 10px 20px; overflow:auto; height:calc(100vh - 58px); }
+.simple-dashboard { display:none; }
+.simple-kpis { display:grid; grid-template-columns:repeat(6,minmax(110px,1fr)); gap:8px; }
+.simple-kpi,.simple-today-card { background:#161b22; border:1px solid #30363d; border-radius:8px; padding:10px 12px; }
+.simple-kpi strong,.simple-today-card strong { display:block; color:#e6edf3; font-size:18px; font-variant-numeric:tabular-nums; }
+.simple-kpi small,.simple-today-card small { display:block; margin-top:4px; color:#7d8590; font-size:9px; text-transform:uppercase; letter-spacing:.06em; }
+.simple-kpi.gold strong { color:#3fb950; }.simple-kpi.blue strong { color:#79c0ff; }.simple-kpi.pink strong { color:#f778ba; }.simple-kpi.green strong { color:#3fb950; }
+.simple-section { margin-top:10px; padding:10px; background:#161b22; border:1px solid #30363d; border-radius:8px; }
+.simple-section-title { color:#8b949e; font-size:10px; letter-spacing:.07em; margin-bottom:8px; }
+.simple-today { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }.simple-today-card { background:#11161d; }
+.simple-table-wrap { overflow:auto; }.simple-table { width:100%; border-collapse:collapse; min-width:760px; font-size:11px; }.simple-table th { color:#7d8590; text-align:left; font-size:9px; padding:7px; border-bottom:1px solid #30363d; }.simple-table td { padding:9px 7px; border-bottom:1px solid #21262d; color:#c9d1d9; }.simple-table tbody tr { cursor:pointer; }.simple-table tbody tr:hover { background:#21262d; }.simple-table td:nth-child(4),.simple-table td:nth-child(5),.simple-table td:nth-child(6) { color:#79c0ff; font-variant-numeric:tabular-nums; }
+.protect-modal { max-width:620px; }.protect-account-label { display:block; }.protect-filter { width:100%; margin:12px 0 8px; }.protect-list { max-height:390px; overflow:auto; display:grid; gap:5px; padding:4px; border:1px solid #30363d; border-radius:7px; }.protect-item { display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:5px; background:#11161d; color:#c9d1d9; cursor:pointer; }.protect-item:hover { background:#21262d; }.protect-item .game-icon { width:24px; height:24px; object-fit:contain; }.protect-item small { margin-left:auto; color:#8b949e; }
+@media (max-width:1100px) { .simple-kpis { grid-template-columns:repeat(3,1fr); } .simple-today { grid-template-columns:repeat(2,1fr); } }
 .panel-zoom-label { min-width:34px; text-align:center; color:#8b949e; font-size:10px; align-self:center; }
 .panel-control { padding:3px 6px!important; font-size:11px!important; }
 .stats-sidebar { position:fixed; z-index:25; left:0; top:52px; bottom:0; width:330px; padding:18px 16px; background:#0d1117; border-right:1px solid #30363d; box-shadow:12px 0 30px rgba(0,0,0,.35); overflow:auto; }

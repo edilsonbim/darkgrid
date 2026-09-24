@@ -30,6 +30,11 @@
     <section class="classic-summary" aria-label="Resumo"><span><b id="activeCount">0/4</b> painéis</span><span id="farmStatus">Aguardando</span><span id="performanceValue">Eco</span><small id="activeSummary">nenhuma sessão iniciada</small><small id="farmSummary">conecte uma conta para começar</small><small id="performanceSummary">painel leve ativado</small></section>
     <section class="classic-heading"><div><p class="eyebrow">PAINÉIS ISOLADOS</p><h1>Contas</h1></div><nav class="classic-tabs" aria-label="Seções"><button class="nav-item active" data-view="overview">▦ Painéis</button><button class="nav-item" data-view="accounts">👤 Treinadores</button><button class="nav-item" data-view="settings">⚙ Configurações</button></nav></section>
     <section class="accounts-grid classic-grid" id="accountsGrid"></section>
+    <section class="simple-dashboard" id="simpleDashboard" hidden aria-label="Modo simples">
+      <div class="simple-kpis" id="simpleKpis"></div>
+      <div class="simple-section"><div class="simple-section-title">HOJE</div><div class="simple-today" id="simpleToday"></div></div>
+      <div class="simple-section"><div class="simple-section-title">POR CONTA · CLIQUE NA LINHA PARA ABRIR O JOGO</div><div class="simple-table-wrap"><table class="simple-table"><thead><tr><th>CONTA</th><th>POKÉMON</th><th>HUNT</th><th>GOLD/H</th><th>XP/H</th><th>KILLS/H</th><th>CAPTURAS</th><th>STATUS</th></tr></thead><tbody id="simpleAccounts"></tbody></table></div></div>
+    </section>
     <section class="empty-state" id="emptyState"><div class="empty-icon">＋</div><h2>Adicione um painel para começar</h2><p>Cada conta fica isolada, com os mesmos atalhos de operação no próprio painel.</p><button class="primary-button" id="emptyLoginButton">▶ Logar equipe</button></section>
     <section class="history-section" aria-labelledby="historyTitle"><div class="section-heading"><div><p class="eyebrow">REGISTRO</p><h2 id="historyTitle">Histórico de hunts</h2></div><button class="ghost-button" id="exportHistoryButton">⇩ Exportar CSV</button></div><div class="history-list" id="historyList"><p class="history-empty">Nenhuma hunt encerrada ainda.</p></div><p class="settings-saved" id="historyExportStatus" role="status"></p></section>
     <section class="settings-panel" id="settingsPanel" hidden aria-labelledby="settingsTitle"><div class="section-heading"><div><p class="eyebrow">PREFERÊNCIAS LOCAIS</p><h2 id="settingsTitle">Alertas e inicialização</h2></div></div><form id="alertSettingsForm" class="settings-form"><label class="toggle-row"><input id="startWithWindows" type="checkbox"><span>Iniciar com o Windows</span></label><label class="toggle-row"><input id="alertEnabled" type="checkbox"><span>Ativar alertas</span></label><label class="toggle-row"><input id="alertNativeNotifications" type="checkbox"><span>Mostrar notificações do Windows</span></label><label class="toggle-row"><input id="alertOffline" type="checkbox"><span>Avisar quando a conta cair</span></label><label class="toggle-row"><input id="alertNoBalls" type="checkbox"><span>Avisar quando faltar Pokébola</span></label><label class="toggle-row"><input id="alertNoProgress" type="checkbox"><span>Avisar quando o farm parar</span></label><label class="toggle-row"><input id="alertDiscordNotifications" type="checkbox"><span>Enviar alertas para o Discord</span></label><label>Webhook do Discord<input id="discordWebhookUrl" type="url" placeholder="https://discord.com/api/webhooks/..." autocomplete="off"></label><div class="discord-actions"><button class="ghost-button" id="clearDiscordWebhook" type="button">Remover webhook salvo</button><span class="settings-saved" id="discordWebhookStatus" role="status">Não configurado</span></div><label>Limite de Pokébolas<input id="alertLowBalls" type="number" min="0" step="1"></label><label>Minutos sem progresso<input id="alertNoProgressMinutes" type="number" min="1" step="1"></label><button class="primary-button" type="submit">Salvar preferências</button><p class="settings-saved" id="settingsSaved" role="status"></p></form></section>
@@ -70,6 +75,18 @@
       <p class="modal-copy">Nomes, usuários e senhas ficam criptografados neste computador e são usados apenas para preencher as janelas do jogo.</p>
       <div id="trainersList" class="trainers-list"></div><p class="form-error" id="trainersStatus" role="alert"></p>
       <div class="modal-actions"><button class="ghost-button" id="trainersCancel" type="button">Cancelar</button><button class="primary-button" id="trainersSave" type="button">Salvar</button></div>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="protectModal" hidden>
+    <section class="auth-modal protect-modal" role="dialog" aria-modal="true" aria-labelledby="protectTitle">
+      <button class="modal-close" id="protectClose" aria-label="Fechar">×</button>
+      <p class="eyebrow">VENDA PROTEGIDA</p><h2 id="protectTitle">Proteger itens</h2>
+      <p class="modal-copy">Itens marcados nunca entram na venda protegida. A seleção fica salva neste computador para cada conta.</p>
+      <label class="protect-account-label">Conta<select id="protectAccount"></select></label>
+      <input id="protectFilter" class="protect-filter" type="search" placeholder="Filtrar itens pelo nome…" autocomplete="off">
+      <div id="protectList" class="protect-list"></div>
+      <p class="settings-saved" id="protectStatus" role="status"></p>
+      <div class="modal-actions"><button class="ghost-button" id="protectCancel" type="button">Cancelar</button><button class="primary-button" id="protectSave" type="button">Salvar proteção</button></div>
     </section>
   </div>
   <div class="modal-backdrop" id="operationsModal" hidden>
