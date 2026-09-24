@@ -6,6 +6,7 @@ const DEFAULT_ALERT_CONFIG = Object.freeze({
   noBalls: true,
   noProgress: true,
   nativeNotifications: true,
+  discordNotifications: false,
   lowBalls: 0,
   noProgressSeconds: 600,
   cooldownMs: 60000
@@ -23,6 +24,7 @@ function normalizeAlertConfig(value = {}) {
     noBalls: value.noBalls !== false,
     noProgress: value.noProgress !== false,
     nativeNotifications: value.nativeNotifications !== false,
+    discordNotifications: value.discordNotifications === true,
     lowBalls: Math.max(0, Math.floor(number(value.lowBalls, DEFAULT_ALERT_CONFIG.lowBalls))),
     noProgressSeconds: Math.max(30, Math.floor(number(value.noProgressSeconds, DEFAULT_ALERT_CONFIG.noProgressSeconds))),
     cooldownMs: Math.max(1000, Math.floor(number(value.cooldownMs, DEFAULT_ALERT_CONFIG.cooldownMs)))

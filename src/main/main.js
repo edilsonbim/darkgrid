@@ -16,6 +16,7 @@ const { AlertEngine, DEFAULT_ALERT_CONFIG, normalizeAlertConfig } = require('../
 const { historyToCsv } = require('../shared/history-csv');
 const { calculateTierList } = require('../shared/tierlist');
 const { projectPokemon } = require('../shared/iv-math');
+const { postDiscordWebhook, validateWebhookUrl } = require('./discord-webhook');
 
 let mainWindow;
 let gameViews;
@@ -53,14 +54,19 @@ function licenseCachePath() { return path.join(app.getPath('userData'), 'license
 function deviceIdPath() { return path.join(app.getPath('userData'), 'device-id.enc'); }
 function huntHistoryPath() { return path.join(app.getPath('userData'), 'hunt-history.json'); }
 function alertConfigPath() { return path.join(app.getPath('userData'), 'alert-config.json'); }
+function discordWebhookPath() { return path.join(app.getPath('userData'), 'discord-webhook.enc'); }
 function loadAlertConfig() { try { return normalizeAlertConfig(JSON.parse(fs.readFileSync(alertConfigPath(), 'utf8'))); } catch { return { ...DEFAULT_ALERT_CONFIG }; } }
 function saveAlertConfig(config) { try { const target = alertConfigPath(); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(`${target}.tmp`, JSON.stringify(normalizeAlertConfig(config), null, 2)); fs.renameSync(`${target}.tmp`, target); return true; } catch { return false; } }
+function loadDiscordWebhook() { if (!safeStorage.isEncryptionAvailable()) return ''; try { const value = safeStorage.decryptString(fs.readFileSync(discordWebhookPath())).trim(); return validateWebhookUrl(value) ? value : ''; } catch { return ''; } }
+function saveDiscordWebhook(value) { if (!validateWebhookUrl(value) || !safeStorage.isEncryptionAvailable()) return false; try { const target = discordWebhookPath(); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(`${target}.tmp`, safeStorage.encryptString(String(value).trim())); fs.renameSync(`${target}.tmp`, target); return true; } catch { return false; } }
+function clearDiscordWebhook() { try { fs.rmSync(discordWebhookPath(), { force: true }); } catch {} }
 function sendAlerts(alerts) {
   for (const alert of alerts || []) {
     mainWindow?.webContents.send('account:alert', alert);
     if (alertEngine?.getConfig().nativeNotifications !== false && Notification.isSupported()) {
       try { new Notification({ title: 'DarkGrid', body: alert.message, silent: false }).show(); } catch {}
     }
+    if (alertEngine?.getConfig().discordNotifications === true) postDiscordWebhook(loadDiscordWebhook(), alert.message).catch(() => {});
   }
 }
 
@@ -219,6 +225,9 @@ ipcMain.handle('history:export', async (event) => {
 });
 ipcMain.handle('alerts:load', (event) => isTrustedUi(event) && alertEngine ? alertEngine.getConfig() : { ...DEFAULT_ALERT_CONFIG });
 ipcMain.handle('alerts:save', (event, config) => { if (!isTrustedUi(event) || !alertEngine) return { ok: false, reason: 'forbidden' }; const normalized = alertEngine.configure(config || {}); return saveAlertConfig(normalized) ? { ok: true, config: normalized } : { ok: false, reason: 'alert_config_save_failed' }; });
+ipcMain.handle('discord:status', (event) => isTrustedUi(event) ? { ok: true, configured: Boolean(loadDiscordWebhook()) } : { ok: false, reason: 'forbidden' });
+ipcMain.handle('discord:save', (event, webhookUrl) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; return saveDiscordWebhook(webhookUrl) ? { ok: true, configured: true } : { ok: false, reason: 'invalid_or_insecure_webhook' }; });
+ipcMain.handle('discord:clear', (event) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; clearDiscordWebhook(); return { ok: true, configured: false }; });
 ipcMain.handle('app:autostart:get', (event) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; if (process.platform !== 'win32') return { ok: false, supported: false, enabled: false }; try { return { ok: true, supported: true, enabled: Boolean(app.getLoginItemSettings().openAtLogin) }; } catch { return { ok: false, supported: true, enabled: false }; } });
 ipcMain.handle('app:autostart:set', (event, enabled) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; if (process.platform !== 'win32') return { ok: false, supported: false, enabled: false }; try { app.setLoginItemSettings({ openAtLogin: Boolean(enabled), args: ['--hidden'] }); return { ok: true, supported: true, enabled: Boolean(app.getLoginItemSettings().openAtLogin) }; } catch { return { ok: false, supported: true, enabled: false }; } });
 
