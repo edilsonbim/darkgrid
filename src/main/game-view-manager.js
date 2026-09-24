@@ -15,6 +15,7 @@ class GameViewManager extends EventEmitter {
     this.layout = { x: 250, y: 120, width: 900, height: 650 };
     this.layoutMode = 'grid';
     this.maximizedId = null;
+    this.panelHeaderHeight = 34;
   }
 
   add({ id, slot }) {
@@ -134,8 +135,9 @@ class GameViewManager extends EventEmitter {
     // desloca a segunda linha e faz um WebContentsView invadir o cabeçalho seguinte.
     const gap = 6;
     const width = Math.max(240, Math.floor((this.layout.width - gap * (columns - 1)) / columns));
-    const height = Math.max(180, Math.floor((this.layout.height - gap * (rows - 1)) / rows));
-    record.view.setBounds({ x: this.layout.x + (index % columns) * (width + gap), y: this.layout.y + Math.floor(index / columns) * (height + gap), width, height });
+    const height = Math.max(180, Math.floor((this.layout.height - gap * (rows - 1) - this.panelHeaderHeight * (rows - 1)) / rows));
+    const row = Math.floor(index / columns);
+    record.view.setBounds({ x: this.layout.x + (index % columns) * (width + gap), y: this.layout.y + row * (height + gap + this.panelHeaderHeight), width, height });
   }
 
   #wire(record) {
