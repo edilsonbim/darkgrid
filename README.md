@@ -21,7 +21,7 @@ $env:DARKGRID_LICENSE_PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----`n...`n-----END PU
 npm start
 ```
 
-O backend e a chave pública de produção não fazem parte deste repositório. Sem essa configuração, o aplicativo permanece explicitamente em “Servidor não configurado” e não restaura contas. Em produção, `DARKGRID_AUTH_URL` deve ser HTTPS; `http://localhost` só é aceito para desenvolvimento local. A licença também fica vinculada ao identificador protegido da instalação.
+O backend e a chave pública de produção não fazem parte deste repositório. Na primeira execução, a URL do backend e a chave pública são gravadas no perfil local do aplicativo para que a sessão continue funcionando quando o DarkGrid for aberto pelo atalho, sem depender das variáveis da janela do PowerShell. Os tokens continuam criptografados no `safeStorage`; a senha não é salva. Sem uma configuração inicial válida, o aplicativo permanece explicitamente em “Servidor não configurado” e não restaura contas. Em produção, `DARKGRID_AUTH_URL` deve ser HTTPS; `http://localhost` só é aceito para desenvolvimento local. A licença também fica vinculada ao identificador protegido da instalação.
 
 O contrato necessário para implementar a API de produção está em [docs/AUTH-API-CONTRACT.md](docs/AUTH-API-CONTRACT.md). O servidor local de desenvolvimento não substitui essa API.
 

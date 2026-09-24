@@ -51,6 +51,7 @@ function credentialsPath() { return path.join(app.getPath('userData'), 'credenti
 function profilesPath() { return path.join(app.getPath('userData'), 'account-profiles.json'); }
 function authSessionPath() { return path.join(app.getPath('userData'), 'auth-session.enc'); }
 function licenseCachePath() { return path.join(app.getPath('userData'), 'license-cache.enc'); }
+function authConfigPath() { return path.join(app.getPath('userData'), 'auth-config.json'); }
 function deviceIdPath() { return path.join(app.getPath('userData'), 'device-id.enc'); }
 function huntHistoryPath() { return path.join(app.getPath('userData'), 'hunt-history.json'); }
 function alertConfigPath() { return path.join(app.getPath('userData'), 'alert-config.json'); }
@@ -60,6 +61,8 @@ function saveAlertConfig(config) { try { const target = alertConfigPath(); fs.mk
 function loadDiscordWebhook() { if (!safeStorage.isEncryptionAvailable()) return ''; try { const value = safeStorage.decryptString(fs.readFileSync(discordWebhookPath())).trim(); return validateWebhookUrl(value) ? value : ''; } catch { return ''; } }
 function saveDiscordWebhook(value) { if (!validateWebhookUrl(value) || !safeStorage.isEncryptionAvailable()) return false; try { const target = discordWebhookPath(); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(`${target}.tmp`, safeStorage.encryptString(String(value).trim())); fs.renameSync(`${target}.tmp`, target); return true; } catch { return false; } }
 function clearDiscordWebhook() { try { fs.rmSync(discordWebhookPath(), { force: true }); } catch {} }
+function loadAuthConfig() { try { const value = JSON.parse(fs.readFileSync(authConfigPath(), 'utf8')); return value && typeof value === 'object' ? { url: String(value.url || '').trim(), publicKey: String(value.publicKey || '') } : null; } catch { return null; } }
+function saveAuthConfig(url, publicKey) { try { const target = authConfigPath(); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(`${target}.tmp`, JSON.stringify({ url: String(url).trim(), publicKey: String(publicKey) })); fs.renameSync(`${target}.tmp`, target); } catch {} }
 function sendAlerts(alerts) {
   for (const alert of alerts || []) {
     mainWindow?.webContents.send('account:alert', alert);
@@ -166,11 +169,12 @@ function createWindow() {
 }
 
 function createAuthRuntime() {
-  const baseUrl = String(process.env.DARKGRID_AUTH_URL || '').trim();
-  const publicKey = String(process.env.DARKGRID_LICENSE_PUBLIC_KEY || '').replace(/\\n/g, '\n');
+  const cached = loadAuthConfig() || {};
+  const baseUrl = String(process.env.DARKGRID_AUTH_URL || cached.url || '').trim();
+  const publicKey = String(process.env.DARKGRID_LICENSE_PUBLIC_KEY || cached.publicKey || '').replace(/\\n/g, '\n');
   if (!baseUrl || !publicKey) return null;
-  const allowInsecureLocalhost = process.env.DARKGRID_ALLOW_INSECURE_LOCALHOST === '1' || process.env.NODE_ENV === 'development';
-  try { return new AuthRuntime({ service: new AuthService({ baseUrl, tokenStore, allowInsecureLocalhost }), publicKey, licenseStore, deviceId: installationDeviceId() }); } catch { return null; }
+  const allowInsecureLocalhost = process.env.DARKGRID_ALLOW_INSECURE_LOCALHOST === '1' || process.env.NODE_ENV === 'development' || cached.url === baseUrl;
+  try { saveAuthConfig(baseUrl, publicKey); return new AuthRuntime({ service: new AuthService({ baseUrl, tokenStore, allowInsecureLocalhost }), publicKey, licenseStore, deviceId: installationDeviceId() }); } catch { return null; }
 }
 
 ipcMain.handle('app:info', (event) => isTrustedUi(event) ? ({ version: app.getVersion(), platform: process.platform }) : null);
