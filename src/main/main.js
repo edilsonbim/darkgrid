@@ -27,6 +27,8 @@ let huntHistory;
 let alertEngine;
 let tray;
 let isQuitting = false;
+// Temporário para a fase de desenvolvimento: reative com DARKGRID_AUTH_DISABLED=0.
+const AUTH_DISABLED = process.env.DARKGRID_AUTH_DISABLED !== '0';
 const rendererUrl = trustedUiUrl(path.join(__dirname, '../renderer/index.html'));
 
 function isTrustedUi(event) {
@@ -178,9 +180,9 @@ function createAuthRuntime() {
 }
 
 ipcMain.handle('app:info', (event) => isTrustedUi(event) ? ({ version: app.getVersion(), platform: process.platform }) : null);
-ipcMain.handle('auth:status', async (event) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; if (!authRuntime) return { ok: false, reason: 'auth_server_not_configured' }; try { return await authRuntime.getStatus(); } catch (cause) { return { ok: false, reason: cause.code || 'auth_required' }; } });
-ipcMain.handle('auth:login', async (event, email, password) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; if (!authRuntime) return { ok: false, reason: 'auth_server_not_configured' }; try { return await authRuntime.login(email, password); } catch (cause) { return { ok: false, reason: cause.code || cause.message || 'auth_failed' }; } });
-ipcMain.handle('auth:logout', async (event) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; if (!authRuntime) return { ok: true }; try { return await authRuntime.logout(); } catch (cause) { return { ok: false, reason: cause.code || 'logout_failed' }; } });
+ipcMain.handle('auth:status', async (event) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; if (AUTH_DISABLED) return { ok: true, bypass: true, offline: true, plan: 'local-development' }; if (!authRuntime) return { ok: false, reason: 'auth_server_not_configured' }; try { return await authRuntime.getStatus(); } catch (cause) { return { ok: false, reason: cause.code || 'auth_required' }; } });
+ipcMain.handle('auth:login', async (event, email, password) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; if (AUTH_DISABLED) return { ok: true, license: { ok: true, bypass: true, offline: true, plan: 'local-development' } }; if (!authRuntime) return { ok: false, reason: 'auth_server_not_configured' }; try { return await authRuntime.login(email, password); } catch (cause) { return { ok: false, reason: cause.code || cause.message || 'auth_failed' }; } });
+ipcMain.handle('auth:logout', async (event) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; if (AUTH_DISABLED) return { ok: true, bypass: true }; if (!authRuntime) return { ok: true }; try { return await authRuntime.logout(); } catch (cause) { return { ok: false, reason: cause.code || 'logout_failed' }; } });
 ipcMain.handle('analytics:tierlist', (event, catalog, level) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; try { return { ok: true, rows: calculateTierList(catalog, level) }; } catch { return { ok: false, reason: 'tierlist_failed' }; } });
 ipcMain.handle('analytics:iv', (event, pokemon) => { if (!isTrustedUi(event)) return { ok: false, reason: 'forbidden' }; try { return { ok: true, result: projectPokemon(pokemon || {}) }; } catch { return { ok: false, reason: 'iv_failed' }; } });
 

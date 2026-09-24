@@ -1,6 +1,6 @@
 # DarkGrid
 
-Novo aplicativo independente para gerenciamento de múltiplas contas e farm, com interface escura, foco em desempenho e preparação para autenticação/licenciamento.
+Novo aplicativo independente para gerenciamento de múltiplas contas e farm, com interface escura e foco em desempenho. O login/licenciamento do produto está temporariamente desativado nesta fase de desenvolvimento.
 
 ## Estado atual
 
@@ -18,6 +18,7 @@ Para habilitar o login/licenciamento do produto, configure antes de iniciar:
 ```powershell
 $env:DARKGRID_AUTH_URL = "https://api.exemplo.com"
 $env:DARKGRID_LICENSE_PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----`n...`n-----END PUBLIC KEY-----"
+$env:DARKGRID_AUTH_DISABLED = "0"
 npm start
 ```
 
