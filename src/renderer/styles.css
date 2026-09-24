@@ -60,11 +60,16 @@ body { min-width:1100px; background:#0d1117; font-family:"Segoe UI Variable Text
 .classic-panel { min-height:190px; display:grid; grid-template-columns:1fr auto; align-content:start; gap:7px 10px; padding:0; overflow:hidden; border:1px solid #30363d; border-radius:7px; background:#161b22; }
 .classic-panel .account-name { padding:8px 10px 4px; align-items:center; }
 .classic-panel .account-avatar { width:27px; height:27px; border-radius:50%; background:#21262d; color:#79c0ff; font-size:12px; }
+.classic-panel .game-icon { width:30px; height:30px; object-fit:contain; image-rendering:auto; filter:drop-shadow(0 1px 2px rgba(0,0,0,.45)); }
 .classic-panel .account-name strong { font-size:12px; }.classic-panel .account-name small { font-size:10px; }
 .classic-panel .account-actions { padding:8px 9px 0; gap:4px; }
 .classic-panel .account-status { font-size:10px; }
 .classic-panel .account-action-bar { display:flex; flex-wrap:wrap; gap:4px; grid-column:1/-1; margin:0; padding:6px 8px 8px; border-top:1px solid #21262d; background:#11161d; }
 .classic-panel .panel-action { padding:4px 7px; border-radius:5px; font-size:10px; }
+.classic-panel .buy-button { border-color:#238636; color:#7ee787; }.classic-panel .buy-button:hover:not(:disabled) { background:#13271a; }
+.classic-panel .ball-count { align-self:center; color:#79c0ff; font-size:10px; font-variant-numeric:tabular-nums; }
+.inventory-name { display:flex; align-items:center; gap:7px; min-width:0; }.inventory-name .game-icon { width:24px; height:24px; object-fit:contain; }
+.auth-modal { overflow:auto; max-width:calc(100vw - 24px); }.operation-section { min-width:0; }.operation-form { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }.operation-form label,.operation-form input { min-width:0; width:100%; }
 .classic-panel .account-stats { grid-column:1/-1; padding:0 10px; margin:0; font-size:10px; }
 .classic-panel:has(.account-status) { box-shadow:inset 0 2px 0 rgba(121,192,255,.25); }
 .empty-state { margin-top:7px; padding:34px 20px; border-color:#30363d; border-radius:7px; background:#11161d; }
