@@ -19,6 +19,7 @@ class GameViewManager extends EventEmitter {
   add({ id, slot }) {
     if (!/^[a-zA-Z0-9_-]{1,64}$/.test(String(id)) || !Number.isInteger(slot) || slot < 0 || slot >= this.maxAccounts) return { ok: false, reason: 'invalid_account' };
     if (this.views.has(id)) return { ok: true, id, existing: true };
+    if ([...this.views.values()].some((record) => record.slot === slot)) return { ok: false, reason: 'slot_in_use' };
     const partition = `persist:darkgrid-account-${id}`;
     try { this.session?.fromPartition(partition).setPermissionRequestHandler((_wc, _permission, callback) => callback(false)); } catch {}
     // O farm continua rodando quando o painel fica oculto ou o app é minimizado.

@@ -24,6 +24,7 @@ const manager = new GameViewManager({ window: parent, WebContentsView: FakeView,
 assert.equal(manager.add({ id: 'account-a', slot: 0 }).ok, true);
 assert.equal(parent.contentView.children[0].options.webPreferences.backgroundThrottling, false);
 assert.equal(manager.add({ id: 'account-a', slot: 0 }).existing, true);
+assert.equal(manager.add({ id: 'account-b', slot: 0 }).reason, 'slot_in_use');
 assert.equal(manager.open('account-a').ok, true);
 assert.equal(parent.contentView.children[0].visible, true);
 assert.equal(parent.contentView.children[0].webContents.focused, true);
@@ -37,4 +38,10 @@ assert.equal(manager.setLayoutMode('column'), true);
 assert.equal(manager.setLayoutMode('invalid'), false);
 assert.equal(manager.remove('account-a').ok, true);
 assert.equal(parent.contentView.children.length, 0);
+const capacityParent = { contentView: { children: [], addChildView(view) { this.children.push(view); }, removeChildView(view) { this.children = this.children.filter((item) => item !== view); } } };
+const capacityManager = new GameViewManager({ window: capacityParent, WebContentsView: FakeView, gameOrigin: 'https://poke.idleworld.online', maxAccounts: 4 });
+for (let slot = 0; slot < 4; slot += 1) assert.equal(capacityManager.add({ id: `capacity-${slot}`, slot }).ok, true);
+assert.equal(capacityManager.add({ id: 'capacity-overflow', slot: 4 }).reason, 'invalid_account');
+assert.equal(capacityManager.add({ id: 'capacity-duplicate-slot', slot: 2 }).reason, 'slot_in_use');
+capacityManager.destroy();
 console.log('DarkGrid game views: sessão, abertura, layout e remoção OK');
