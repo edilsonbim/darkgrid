@@ -6,7 +6,7 @@ O DarkGrid possui identidade, estrutura e ciclo de distribuição próprios. A i
 
 ## D2 — Electron na V1
 
-Electron é mantido para reduzir risco na criação de múltiplas sessões, tray, notificações, armazenamento seguro e controle de conteúdo remoto. O projeto será preparado para migrar a superfície do jogo de `<webview>` para `WebContentsView` depois de uma prova técnica de uma conta.
+Electron é mantido para reduzir risco na criação de múltiplas sessões, tray, notificações, armazenamento seguro e controle de conteúdo remoto. A V1 já usa `WebContentsView` com uma partição persistente isolada por conta; `<webview>` não é requisito da arquitetura atual.
 
 ## D3 — Fronteiras obrigatórias
 
