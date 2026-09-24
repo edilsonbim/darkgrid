@@ -10,6 +10,7 @@ let teamAccount = null;
 let huntAccount = null;
 let sidebarOpen = false;
 let maximizedAccountId = null;
+let ivPopupOpen = false;
 let protectedItemIds = (() => { try { return new Set(JSON.parse(localStorage.getItem('darkgrid-protected-items') || '[]').map(String)); } catch { return new Set(); } })();
 let protectAccount = null;
 const panelZooms = Object.assign({}, (() => { try { return JSON.parse(localStorage.getItem('darkgrid-panel-zooms') || '{}'); } catch { return {}; } })());
@@ -20,7 +21,7 @@ const PANEL_GAME_Y = 90;
 const PANEL_HEADER_HEIGHT = 34;
 function panelGeometry(index, count = state.accounts.length) {
   const availableX = sidebarOpen ? 340 : 0;
-  const availableWidth = Math.max(300, window.innerWidth - availableX);
+  const availableWidth = Math.max(300, window.innerWidth - availableX - (ivPopupOpen ? 580 : 0));
   const availableHeight = Math.max(240, window.innerHeight - PANEL_GAME_Y);
   const columns = maximizedAccountId ? 1 : layoutMode === 'row' ? Math.max(1, count) : layoutMode === 'column' ? 1 : count <= 1 ? 1 : 2;
   const rows = maximizedAccountId ? 1 : Math.max(1, Math.ceil(count / columns));
@@ -192,8 +193,10 @@ function fillIvFields(pokemon = {}) {
   document.querySelectorAll('[data-base]').forEach((input) => { input.value = Number.isFinite(Number(pokemon.baseStats?.[input.dataset.base])) ? pokemon.baseStats[input.dataset.base] : ''; });
 }
 async function openIv(account) {
-  showUiOverlay();
+  ivPopupOpen = true;
   ivAccount = account;
+  await window.darkGridAPI.setAccountsVisible(true);
+  syncLayout();
   await refreshAccount(account);
   try {
     const catalogResponse = await window.darkGridAPI.accountAction(account.id, 'readHunts', {});
@@ -212,7 +215,7 @@ async function openIv(account) {
   fillIvFields(team[0] || {});
   $('#ivResult').replaceChildren(); $('#ivError').textContent = ''; $('#ivModal').hidden = false;
 }
-function closeIv() { ivAccount = null; $('#ivModal').hidden = true; $('#ivError').textContent = ''; restoreGameViews(); }
+function closeIv() { ivAccount = null; ivPopupOpen = false; $('#ivModal').hidden = true; $('#ivError').textContent = ''; restoreGameViews(); syncLayout(); }
 function renderIvResult(result) {
   const items = [['Fonte', result.ivSource || 'desconhecida'], ['Poder', result.power == null ? '—' : Number(result.power).toLocaleString('pt-BR')], ...Object.entries(result.stats || {}).map(([key, value]) => [key.toUpperCase(), value == null ? '—' : Number(value).toLocaleString('pt-BR')])];
   $('#ivResult').replaceChildren(...items.map(([label, value]) => { const item = document.createElement('div'); item.className = 'analyzer-kpi'; const title = document.createElement('span'); title.textContent = label; const number = document.createElement('strong'); number.textContent = String(value); item.append(title, number); return item; }));
@@ -357,7 +360,7 @@ function applySnapshot(account, snapshot) {
   if (!snapshot) return;
   account.status = snapshot.status; account.name = snapshot.name || account.name; account.hunt = snapshot.hunt?.name || snapshot.hunt?.slug || 'Sem hunt'; account.huntSlug = snapshot.hunt?.slug || account.huntSlug || ''; account.level = snapshot.level; account.gold = snapshot.gold; account.balls = snapshot.balls; account.potions = snapshot.potions; account.ballCatalog = Array.isArray(snapshot.ballCatalog) ? snapshot.ballCatalog : account.ballCatalog || []; account.inventory = Array.isArray(snapshot.inventory) ? snapshot.inventory : account.inventory || []; account.team = Array.isArray(snapshot.team) ? snapshot.team : account.team || []; account.metrics = snapshot.metrics || account.metrics || {}; account.analyzer = snapshot.analyzer || account.analyzer || null; account.drops = snapshot.drops || account.drops || [];
 }
-function syncLayout() { const x = sidebarOpen ? 340 : 0; window.darkGridAPI.setAccountLayout({ x, y: PANEL_GAME_Y, width: Math.max(500, window.innerWidth - x), height: Math.max(400, window.innerHeight - PANEL_GAME_Y) }); positionPanelHeaders(); }
+function syncLayout() { const x = sidebarOpen ? 340 : 0; const reserved = ivPopupOpen ? 580 : 0; window.darkGridAPI.setAccountLayout({ x, y: PANEL_GAME_Y, width: Math.max(500, window.innerWidth - x - reserved), height: Math.max(400, window.innerHeight - PANEL_GAME_Y) }); positionPanelHeaders(); }
 async function changePanelZoom(account, delta) { const current = Number(panelZooms[account.id] || 1); const next = Math.min(1.5, Math.max(0.5, Math.round((current + delta) * 20) / 20)); panelZooms[account.id] = next; localStorage.setItem('darkgrid-panel-zooms', JSON.stringify(panelZooms)); await window.darkGridAPI.setAccountZoom(account.id, next); render(); }
 async function reloadPanel(account) { await window.darkGridAPI.reloadAccount(account.id); }
 async function refreshAllAccounts() { await Promise.all(state.accounts.map((account) => window.darkGridAPI.reloadAccount(account.id))); await Promise.all(state.accounts.map((account) => refreshAccount(account))); }
