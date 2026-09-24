@@ -14,6 +14,7 @@ class GameViewManager extends EventEmitter {
     this.views = new Map();
     this.layout = { x: 250, y: 120, width: 900, height: 650 };
     this.layoutMode = 'grid';
+    this.maximizedId = null;
   }
 
   add({ id, slot }) {
@@ -60,6 +61,26 @@ class GameViewManager extends EventEmitter {
     return true;
   }
 
+  setMaximized(id = null) {
+    if (id !== null && !this.views.has(String(id))) return false;
+    this.maximizedId = id === null ? null : String(id);
+    for (const record of this.views.values()) this.#applyBounds(record);
+    return true;
+  }
+
+  setZoom(id, factor) {
+    const record = this.views.get(String(id));
+    const next = Number(factor);
+    if (!record || !Number.isFinite(next)) return false;
+    try { record.view.webContents.setZoomFactor(Math.min(1.5, Math.max(0.5, next))); return true; } catch { return false; }
+  }
+
+  reload(id) {
+    const record = this.views.get(String(id));
+    if (!record) return false;
+    try { record.view.webContents.reload(); return true; } catch { return false; }
+  }
+
   remove(id) {
     const record = this.views.get(id);
     if (!record) return { ok: false, reason: 'account_not_found' };
@@ -98,6 +119,12 @@ class GameViewManager extends EventEmitter {
   }
 
   #applyBounds(record) {
+    if (this.maximizedId) {
+      record.view.setBounds(this.maximizedId === record.id
+        ? { ...this.layout }
+        : { x: -10000, y: -10000, width: 1, height: 1 });
+      return;
+    }
     const count = Math.max(1, this.views.size);
     const columns = this.layoutMode === 'row' ? count : this.layoutMode === 'column' ? 1 : count === 1 ? 1 : 2;
     const rows = Math.ceil(count / columns);

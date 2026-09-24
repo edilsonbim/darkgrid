@@ -77,3 +77,25 @@ body { min-width:1100px; background:#0d1117; font-family:"Segoe UI Variable Text
 .settings-panel { margin-top:18px; border-radius:7px; background:#161b22; }
 body.compact-mode .classic-workspace { max-width:1200px; margin:auto; } body.compact-mode .classic-panel { min-height:120px; }
 @media (max-width:1450px) { .classic-topbar { gap:4px; } .classic-button { padding-inline:6px; } .classic-summary { grid-template-columns:repeat(3,max-content) 1fr 1fr 1fr; } }
+
+body.panels-active .classic-workspace { padding:0; }
+body.panels-active .classic-summary, body.panels-active .classic-heading, body.panels-active .empty-state, body.panels-active .history-section, body.panels-active .settings-panel { display:none!important; }
+body.panels-active #accountsGrid { position:fixed; inset:0; pointer-events:none; display:block; z-index:2; }
+body.panels-active #accountsGrid .classic-panel { position:absolute; pointer-events:auto; min-height:0; display:grid; grid-template-columns:1fr auto; border-radius:4px; border-color:#2c3747; background:#11161d; box-shadow:0 2px 10px rgba(0,0,0,.25); }
+body.panels-active #accountsGrid .classic-panel .account-name { padding:4px 8px; overflow:hidden; }
+body.panels-active #accountsGrid .classic-panel .account-name small, body.panels-active #accountsGrid .classic-panel .account-stats, body.panels-active #accountsGrid .classic-panel .account-action-bar { display:none; }
+body.panels-active #accountsGrid .classic-panel .account-name strong { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+body.panels-active #accountsGrid .classic-panel .account-actions { padding:3px 5px; gap:3px; }
+body.panels-active #accountsGrid .classic-panel .account-status, body.panels-active #accountsGrid .classic-panel .ball-count, body.panels-active #accountsGrid .classic-panel .buy-button, body.panels-active #accountsGrid .classic-panel .open-button, body.panels-active #accountsGrid .classic-panel .danger-button { display:none; }
+.panel-zoom-label { min-width:34px; text-align:center; color:#8b949e; font-size:10px; align-self:center; }
+.panel-control { padding:3px 6px!important; font-size:11px!important; }
+.stats-sidebar { position:fixed; z-index:25; left:0; top:52px; bottom:0; width:330px; padding:18px 16px; background:#0d1117; border-right:1px solid #30363d; box-shadow:12px 0 30px rgba(0,0,0,.35); overflow:auto; }
+.stats-sidebar .modal-close { right:10px; top:10px; }
+.stats-sidebar h2 { margin:8px 0 18px; font-size:18px; }
+.sidebar-stat { display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid #21262d; color:#8b949e; font-size:12px; }
+.sidebar-stat strong { color:#e6edf3; }
+.trainers-modal { max-width:680px; }
+.trainers-list { display:grid; gap:8px; margin:18px 0; }
+.trainer-row { display:grid; grid-template-columns:1fr 1.5fr 1.2fr auto; gap:6px; }
+.trainer-row input { min-width:0; }
+.modal-actions { display:flex; justify-content:flex-end; gap:8px; }

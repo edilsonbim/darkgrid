@@ -11,6 +11,7 @@ class FakeContents extends EventEmitter {
   close() { this.closed = true; }
   isDestroyed() { return false; }
   reload() { this.reloaded = true; }
+  setZoomFactor(value) { this.zoomFactor = value; }
 }
 class FakeView {
   constructor(options) { this.options = options; this.webContents = new FakeContents(); this.visible = false; this.bounds = null; }
@@ -36,6 +37,13 @@ assert.equal(manager.setLayout({ x: 10, y: 20, width: 600, height: 400 }), true)
 assert.equal(parent.contentView.children[0].bounds.width, 600);
 assert.equal(manager.setLayoutMode('column'), true);
 assert.equal(manager.setLayoutMode('invalid'), false);
+assert.equal(manager.setZoom('account-a', 1.25), true);
+assert.equal(parent.contentView.children[0].webContents.zoomFactor, 1.25);
+assert.equal(manager.reload('account-a'), true);
+assert.equal(parent.contentView.children[0].webContents.reloaded, true);
+assert.equal(manager.setMaximized('account-a'), true);
+assert.equal(parent.contentView.children[0].bounds.width, 600);
+assert.equal(manager.setMaximized(null), true);
 assert.equal(manager.remove('account-a').ok, true);
 assert.equal(parent.contentView.children.length, 0);
 const capacityParent = { contentView: { children: [], addChildView(view) { this.children.push(view); }, removeChildView(view) { this.children = this.children.filter((item) => item !== view); } } };

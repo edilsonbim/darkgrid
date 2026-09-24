@@ -8,9 +8,30 @@ let operationsAccount = null;
 let inventoryAccount = null;
 let teamAccount = null;
 let huntAccount = null;
+let sidebarOpen = false;
+let maximizedAccountId = null;
+const panelZooms = Object.assign({}, (() => { try { return JSON.parse(localStorage.getItem('darkgrid-panel-zooms') || '{}'); } catch { return {}; } })());
 const $ = (selector) => document.querySelector(selector);
 const statusLabels = { loading: 'Carregando jogo', login_required: 'Login necessário', online: 'Online', stale: 'Sem atividade recente', offline: 'Offline', error: 'Erro no painel', opened: 'Painel aberto', closed: 'Painel oculto' };
 const actionIcons = { gameLogin: '▶', hunt: '🎯', openMarket: '🛒', openDepot: '🗄', team: '👥', iv: '◉', scripts: '🧩', inventory: '🎒', operations: '⚙', returnToLastHunt: '↩', refresh: '⟳' };
+const PANEL_GAME_Y = 90;
+const PANEL_HEADER_HEIGHT = 34;
+function panelGeometry(index, count = state.accounts.length) {
+  const availableX = sidebarOpen ? 340 : 0;
+  const availableWidth = Math.max(300, window.innerWidth - availableX);
+  const availableHeight = Math.max(240, window.innerHeight - PANEL_GAME_Y);
+  const columns = maximizedAccountId ? 1 : layoutMode === 'row' ? Math.max(1, count) : layoutMode === 'column' ? 1 : count <= 1 ? 1 : 2;
+  const rows = maximizedAccountId ? 1 : Math.max(1, Math.ceil(count / columns));
+  const gap = 6;
+  const width = maximizedAccountId ? availableWidth : Math.max(240, Math.floor((availableWidth - gap * (columns - 1)) / columns));
+  const height = maximizedAccountId ? availableHeight : Math.max(180, Math.floor((availableHeight - gap * (rows - 1)) / rows));
+  const position = maximizedAccountId ? 0 : index;
+  return { x: availableX + (position % columns) * (width + gap), y: PANEL_GAME_Y + Math.floor(position / columns) * (height + gap), width, height, headerY: PANEL_GAME_Y - PANEL_HEADER_HEIGHT + Math.floor(position / columns) * (height + gap) };
+}
+function positionPanelHeaders() {
+  const cards = [...document.querySelectorAll('#accountsGrid .classic-panel')];
+  cards.forEach((card, index) => { const account = state.accounts[index]; const hidden = maximizedAccountId && account?.id !== maximizedAccountId; const box = panelGeometry(index); card.style.display = hidden ? 'none' : ''; card.style.left = `${box.x}px`; card.style.top = `${box.headerY}px`; card.style.width = `${box.width}px`; card.style.height = `${PANEL_HEADER_HEIGHT}px`; });
+}
 const GAME_ORIGIN = 'https://poke.idleworld.online';
 function gameIconUrl(value) {
   const raw = String(value || '').trim();
@@ -38,9 +59,11 @@ async function buy1000Balls(account, button) {
 async function maximizeAccount(account) {
   if (!account) return;
   compactMode = false; document.body.classList.remove('compact-mode'); $('#compactButton').setAttribute('aria-pressed', 'false'); $('#compactButton').textContent = '🃏 Cartas';
-  await window.darkGridAPI.setAccountsVisible(false);
-  await window.darkGridAPI.setAccountLayout({ x: 0, y: 52, width: window.innerWidth, height: Math.max(360, window.innerHeight - 52) });
+  maximizedAccountId = maximizedAccountId === account.id ? null : account.id;
+  await window.darkGridAPI.setAccountMaximized(maximizedAccountId);
+  await window.darkGridAPI.setAccountsVisible(true);
   await window.darkGridAPI.openAccount(account.id);
+  syncLayout();
 }
 async function openMarketAndMaximize(account) {
   await runAccountAction(account, 'openMarket');
@@ -48,6 +71,7 @@ async function openMarketAndMaximize(account) {
 }
 
 function render() {
+  document.body.classList.add('panels-active');
   const grid = $('#accountsGrid');
   $('#activeCount').textContent = `${state.accounts.length}/4`;
   const online = state.accounts.filter((account) => account.status === 'online' || account.status === 'stale').length;
@@ -83,8 +107,14 @@ function render() {
     }
     const buy = document.createElement('button'); buy.className = 'mini-button buy-button'; buy.textContent = '◉ +1000'; buy.title = 'Comprar 1000 Pokébolas'; buy.disabled = Boolean(account.actionBusy); buy.addEventListener('click', () => buy1000Balls(account, buy));
     const balls = document.createElement('span'); balls.className = 'ball-count'; balls.textContent = `◉ ${Number(account.balls || 0).toLocaleString('pt-BR')}`; balls.title = 'Pokébolas disponíveis';
-    actions.append(status, balls, buy, open, remove); card.append(name, actions, actionBar); return card;
+    const zoomOut = document.createElement('button'); zoomOut.className = 'mini-button panel-control'; zoomOut.textContent = '−'; zoomOut.title = 'Reduzir interface'; zoomOut.addEventListener('click', () => changePanelZoom(account, -0.05));
+    const zoomLabel = document.createElement('span'); zoomLabel.className = 'panel-zoom-label'; zoomLabel.textContent = `${Math.round(Number(panelZooms[account.id] || 1) * 100)}%`;
+    const zoomIn = document.createElement('button'); zoomIn.className = 'mini-button panel-control'; zoomIn.textContent = '+'; zoomIn.title = 'Aumentar interface'; zoomIn.addEventListener('click', () => changePanelZoom(account, 0.05));
+    const reload = document.createElement('button'); reload.className = 'mini-button panel-control'; reload.textContent = '↻'; reload.title = 'Recarregar jogo'; reload.addEventListener('click', () => reloadPanel(account));
+    const maximize = document.createElement('button'); maximize.className = 'mini-button panel-control'; maximize.textContent = maximizedAccountId === account.id ? '↙' : '⛶'; maximize.title = 'Maximizar/minimizar painel'; maximize.addEventListener('click', () => maximizeAccount(account));
+    actions.append(status, balls, buy, zoomOut, zoomLabel, zoomIn, reload, maximize, open, remove); card.append(name, actions, actionBar); return card;
   }));
+  positionPanelHeaders();
   $('#emptyState').style.display = state.accounts.length ? 'none' : 'grid';
   const history = $('#historyList');
   if (!state.history.length) { history.replaceChildren(Object.assign(document.createElement('p'), { className: 'history-empty', textContent: 'Nenhuma hunt encerrada ainda.' })); return; }
@@ -113,7 +143,7 @@ function openAuthModal() { showUiOverlay(); $('#authModal').hidden = false; $('#
 function closeAuthModal() { $('#authModal').hidden = true; $('#authError').textContent = ''; restoreGameViews(); }
 async function openGameLogin(account) { showUiOverlay(); gameLoginAccount = account; const saved = state.credentials[account.id] || {}; $('#gameUsername').value = saved.username || ''; $('#gamePassword').value = saved.password || ''; $('#rememberGameCredentials').checked = true; await window.darkGridAPI.openAccount(account.id); syncLayout(); $('#gameLoginModal').hidden = false; $('#gameUsername').focus(); }
 function closeGameLogin() { gameLoginAccount = null; $('#gameLoginModal').hidden = true; $('#gameUsername').value = ''; $('#gamePassword').value = ''; $('#rememberGameCredentials').checked = true; $('#gameLoginError').textContent = ''; restoreGameViews(); }
-async function openOperations(account) { showUiOverlay(); operationsAccount = account; $('#operationsAccountLabel').textContent = account.name || 'Conta selecionada'; $('#operationsError').textContent = ''; $('#pokemonStatus').textContent = 'Carregando Pokémon…'; $('#operationsModal').hidden = false; $('#ballId').focus(); try { const response = await window.darkGridAPI.accountAction(account.id, 'readPokemon', {}); if (response?.ok && response.result?.ok) { account.pokemon = Array.isArray(response.result.items) ? response.result.items : []; $('#pokemonStatus').textContent = `${account.pokemon.length} Pokémon lido(s)`; } else $('#pokemonStatus').textContent = 'Lista de Pokémon indisponível'; } catch { $('#pokemonStatus').textContent = 'Lista de Pokémon indisponível'; } }
+async function openOperations(account) { showUiOverlay(); operationsAccount = account; $('#operationsAccountLabel').textContent = account.name || 'Conta selecionada'; $('#operationsError').textContent = ''; $('#pokemonStatus').textContent = 'Carregando Pokémon…'; const catalog = Array.isArray(account.ballCatalog) && account.ballCatalog.length ? account.ballCatalog : [{ id: 1, name: 'Pokébola' }, { id: 2, name: 'Great Ball' }, { id: 3, name: 'Ultra Ball' }, { id: 4, name: 'Master Ball' }, { id: 5, name: 'Premier Ball' }]; $('#ballId').replaceChildren(...catalog.map((ball) => { const option = document.createElement('option'); option.value = String(ball.id); option.textContent = ball.name || `Pokébola #${ball.id}`; return option; })); $('#operationsModal').hidden = false; $('#ballId').focus(); try { const response = await window.darkGridAPI.accountAction(account.id, 'readPokemon', {}); if (response?.ok && response.result?.ok) { account.pokemon = Array.isArray(response.result.items) ? response.result.items : []; $('#pokemonStatus').textContent = `${account.pokemon.length} Pokémon lido(s)`; } else $('#pokemonStatus').textContent = 'Lista de Pokémon indisponível'; } catch { $('#pokemonStatus').textContent = 'Lista de Pokémon indisponível'; } }
 function closeOperations() { operationsAccount = null; $('#operationsModal').hidden = true; $('#operationsError').textContent = ''; restoreGameViews(); }
 async function protectedSale(kind, button) { if (!operationsAccount || operationsAccount.actionBusy) return; const account = operationsAccount; const source = kind === 'items' ? account.inventory : account.pokemon; const previewAction = kind === 'items' ? 'previewSellItems' : 'previewSellPokemon'; const saleAction = kind === 'items' ? 'sellItems' : 'sellPokemon'; const input = kind === 'items' ? { items: Array.isArray(source) ? source : [] } : { pokemon: Array.isArray(source) ? source : [] }; button.disabled = true; account.actionBusy = true; $('#operationsError').textContent = ''; try { const preview = await window.darkGridAPI.accountAction(account.id, previewAction, input); if (!preview?.ok || !preview.result?.ok) throw new Error(preview?.reason || 'preview_failed'); const count = kind === 'items' ? preview.result.items.length : preview.result.pokeIds.length; if (!count) throw new Error('nenhum_item_permitido'); const label = kind === 'items' ? `${count} tipo(s) de item permitido(s)` : `${count} Pokémon permitido(s)`; if (!window.confirm(`${label} serão vendidos. Itens raros e Pokémon protegidos permanecem bloqueados. Continuar?`)) return; const result = await window.darkGridAPI.accountAction(account.id, saleAction, input); if (!result?.ok || !result.result?.ok) throw new Error(result?.reason || result?.result?.reason || 'sale_failed'); account.status = 'online'; $('#operationsError').textContent = 'Venda concluída'; } catch (cause) { $('#operationsError').textContent = cause.message === 'nenhum_item_permitido' ? 'Nenhum item permitido para vender.' : `Venda não concluída: ${cause.message}`; } finally { account.actionBusy = false; button.disabled = false; render(); } }
 async function openInventory(account) { showUiOverlay(); inventoryAccount = account; await refreshAccount(account); $('#inventoryAccountLabel').textContent = account.name || 'Conta selecionada'; const list = $('#inventoryList'); const items = Array.isArray(account.inventory) ? account.inventory : []; list.replaceChildren(...(items.length ? items.map((item) => { const row = document.createElement('div'); row.className = 'inventory-row'; const icon = gameIcon(item.icon, item.name || ''); const name = document.createElement('span'); name.className = 'inventory-name'; if (icon) name.append(icon); name.append(document.createTextNode(item.name || `Item ${item.itemId}`)); const category = document.createElement('small'); category.textContent = item.category || `#${item.itemId}`; const quantity = document.createElement('strong'); quantity.textContent = String(item.quantity); row.append(name, category, quantity); return row; }) : [Object.assign(document.createElement('p'), { className: 'history-empty', textContent: 'Nenhum item encontrado.' })])); $('#inventoryModal').hidden = false; }
@@ -196,6 +226,40 @@ async function submitOperation(event, action, inputFactory) {
   }
 }
 
+function openTrainers() {
+  showUiOverlay();
+  const list = $('#trainersList');
+  const rows = [...state.accounts];
+  while (rows.length < 4) rows.push({ id: '', slot: rows.length, name: '', label: '', username: '', password: '' });
+  list.replaceChildren(...rows.map((account, index) => {
+    const row = document.createElement('div'); row.className = 'trainer-row'; row.dataset.slot = String(index); row.dataset.id = account.id || '';
+    for (const [key, placeholder, type] of [['name', `Treinador ${index + 1}`, 'text'], ['username', 'E-mail ou usuário', 'text'], ['password', 'Senha', 'password']]) {
+      const input = document.createElement('input'); input.dataset.field = key; input.type = type; input.placeholder = placeholder; input.value = key === 'name' ? (account.name || account.label || '') : key === 'username' ? (state.credentials[account.id]?.username || '') : (state.credentials[account.id]?.password || ''); input.autocomplete = key === 'password' ? 'current-password' : 'off'; row.append(input);
+    }
+    const remove = document.createElement('button'); remove.className = 'mini-button danger-button'; remove.type = 'button'; remove.textContent = '✕'; remove.title = 'Limpar treinador'; remove.addEventListener('click', () => row.querySelectorAll('input').forEach((input) => { input.value = ''; })); row.append(remove); return row;
+  }));
+  $('#trainersStatus').textContent = ''; $('#trainersModal').hidden = false;
+}
+function closeTrainers() { $('#trainersModal').hidden = true; $('#trainersStatus').textContent = ''; restoreGameViews(); }
+async function saveTrainers() {
+  const rows = [...document.querySelectorAll('.trainer-row')];
+  for (const row of rows) {
+    const values = Object.fromEntries([...row.querySelectorAll('input')].map((input) => [input.dataset.field, input.value.trim()]));
+    if (!values.username && !values.password && !values.name) continue;
+    let account = state.accounts.find((item) => item.id === row.dataset.id);
+    if (!account) {
+      if (state.accounts.length >= 4) continue;
+      const id = `account-${Date.now()}-${row.dataset.slot}`; const result = await window.darkGridAPI.addAccount({ id, slot: Number(row.dataset.slot) }); if (!result?.ok) throw new Error(result?.reason || 'account_create_failed');
+      account = { id, slot: Number(row.dataset.slot), label: values.name || `Conta ${Number(row.dataset.slot) + 1}`, name: values.name || `Conta ${Number(row.dataset.slot) + 1}`, enabled: true, hunt: 'Pronta para conectar', status: 'loading' }; state.accounts.push(account); row.dataset.id = id;
+    }
+    account.name = values.name || account.name; account.label = values.name || account.label; state.credentials[account.id] = { id: account.id, username: values.username, password: values.password };
+  }
+  await window.darkGridAPI.saveCredentials(Object.values(state.credentials)); await saveProfiles(); closeTrainers(); render();
+}
+async function loginTeam() { const accounts = state.accounts.filter((account) => state.credentials[account.id]?.username && state.credentials[account.id]?.password); if (!accounts.length) { openTrainers(); return; } for (const account of accounts) { await window.darkGridAPI.openAccount(account.id); const credentials = state.credentials[account.id]; await window.darkGridAPI.accountAction(account.id, 'fillGameCredentials', credentials); await window.darkGridAPI.accountAction(account.id, 'submitGameLogin', {}); } await window.darkGridAPI.setAccountsVisible(true); syncLayout(); }
+function renderSidebar(account) { const root = $('#statsSidebarContent'); if (!account) { root.innerHTML = '<p class="history-empty">Selecione uma conta para ver os dados.</p>'; return; } const metrics = account.metrics || {}; root.replaceChildren(...[['Status', statusLabels[account.status] || account.status], ['Hunt', account.hunt || '—'], ['Nível', account.level || '—'], ['Gold', Number(account.gold || 0).toLocaleString('pt-BR')], ['Kills/h', Number(metrics.kph || 0).toLocaleString('pt-BR')], ['XP/h', Number(metrics.xph || 0).toLocaleString('pt-BR')], ['Capturas', Number(metrics.captures || 0).toLocaleString('pt-BR')]].map(([label, value]) => { const row = document.createElement('div'); row.className = 'sidebar-stat'; row.innerHTML = `<span>${label}</span><strong>${value}</strong>`; return row; })); }
+function toggleStatsSidebar() { sidebarOpen = !sidebarOpen; $('#statsSidebar').hidden = !sidebarOpen; if (sidebarOpen) renderSidebar(focusedAccount()); syncLayout(); }
+
 async function addAccount() {
   if (!state.auth.ok) { openAuthModal(); return; }
   if (state.auth.offlineGrace) { $('#connectionLabel').textContent = 'Grace offline: novas ativações bloqueadas'; return; }
@@ -261,9 +325,12 @@ async function runAccountAction(account, action, input = {}) {
 }
 function applySnapshot(account, snapshot) {
   if (!snapshot) return;
-  account.status = snapshot.status; account.name = snapshot.name || account.name; account.hunt = snapshot.hunt?.name || snapshot.hunt?.slug || 'Sem hunt'; account.huntSlug = snapshot.hunt?.slug || account.huntSlug || ''; account.level = snapshot.level; account.gold = snapshot.gold; account.balls = snapshot.balls; account.potions = snapshot.potions; account.inventory = Array.isArray(snapshot.inventory) ? snapshot.inventory : account.inventory || []; account.team = Array.isArray(snapshot.team) ? snapshot.team : account.team || []; account.metrics = snapshot.metrics || account.metrics || {}; account.analyzer = snapshot.analyzer || account.analyzer || null; account.drops = snapshot.drops || account.drops || [];
+  account.status = snapshot.status; account.name = snapshot.name || account.name; account.hunt = snapshot.hunt?.name || snapshot.hunt?.slug || 'Sem hunt'; account.huntSlug = snapshot.hunt?.slug || account.huntSlug || ''; account.level = snapshot.level; account.gold = snapshot.gold; account.balls = snapshot.balls; account.potions = snapshot.potions; account.ballCatalog = Array.isArray(snapshot.ballCatalog) ? snapshot.ballCatalog : account.ballCatalog || []; account.inventory = Array.isArray(snapshot.inventory) ? snapshot.inventory : account.inventory || []; account.team = Array.isArray(snapshot.team) ? snapshot.team : account.team || []; account.metrics = snapshot.metrics || account.metrics || {}; account.analyzer = snapshot.analyzer || account.analyzer || null; account.drops = snapshot.drops || account.drops || [];
 }
-function syncLayout() { window.darkGridAPI.setAccountLayout({ x: 250, y: 112, width: Math.max(500, window.innerWidth - 270), height: Math.max(400, window.innerHeight - 135) }); }
+function syncLayout() { const x = sidebarOpen ? 340 : 0; window.darkGridAPI.setAccountLayout({ x, y: PANEL_GAME_Y, width: Math.max(500, window.innerWidth - x), height: Math.max(400, window.innerHeight - PANEL_GAME_Y) }); positionPanelHeaders(); }
+async function changePanelZoom(account, delta) { const current = Number(panelZooms[account.id] || 1); const next = Math.min(1.5, Math.max(0.5, Math.round((current + delta) * 20) / 20)); panelZooms[account.id] = next; localStorage.setItem('darkgrid-panel-zooms', JSON.stringify(panelZooms)); await window.darkGridAPI.setAccountZoom(account.id, next); render(); }
+async function reloadPanel(account) { await window.darkGridAPI.reloadAccount(account.id); }
+async function refreshAllAccounts() { await Promise.all(state.accounts.map((account) => window.darkGridAPI.reloadAccount(account.id))); await Promise.all(state.accounts.map((account) => refreshAccount(account))); }
 function renderLayoutButton() { $('#layoutButton').textContent = `Layout: ${{ grid: 'Grade', row: 'Uma linha', column: 'Uma coluna' }[layoutMode]}`; }
 async function cycleLayout() {
   const modes = ['grid', 'row', 'column'];
@@ -280,10 +347,10 @@ async function setCompactMode(enabled) {
   if (!compactMode) syncLayout();
 }
 
-$('#loginButton').addEventListener('click', openAuthModal);
+$('#loginButton').addEventListener('click', loginTeam);
 $('#emptyLoginButton').addEventListener('click', addAccount);
-$('#manageAccountsButton').addEventListener('click', addAccount);
-$('#refreshButton').addEventListener('click', render);
+$('#manageAccountsButton').addEventListener('click', openTrainers);
+$('#refreshButton').addEventListener('click', refreshAllAccounts);
 $('#compactButton').addEventListener('click', () => setCompactMode(!compactMode));
 $('#layoutButton').addEventListener('click', cycleLayout);
 const focusedAccount = () => state.accounts.find((account) => account.status === 'online' || account.status === 'stale') || state.accounts[0];
@@ -296,6 +363,8 @@ $('#scriptsButton').addEventListener('click', () => { $('#optionsMenu').classLis
 $('#operationsMenuButton').addEventListener('click', () => { $('#optionsMenu').classList.remove('show'); openFocused(openOperations); });
 $('#inventoryMenuButton').addEventListener('click', () => { $('#optionsMenu').classList.remove('show'); openFocused(openInventory); });
 $('#teamMenuButton').addEventListener('click', () => { $('#optionsMenu').classList.remove('show'); openFocused(openTeam); });
+$('#panelsMenuButton').addEventListener('click', () => { $('#optionsMenu').classList.remove('show'); restoreGameViews(); syncLayout(); });
+$('#gridMenuButton').addEventListener('click', () => { $('#optionsMenu').classList.remove('show'); if (layoutMode !== 'grid') { layoutMode = 'grid'; localStorage.setItem('darkgrid-layout', layoutMode); window.darkGridAPI.setLayoutMode(layoutMode); renderLayoutButton(); syncLayout(); } });
 $('#settingsMenuButton').addEventListener('click', () => { $('#optionsMenu').classList.remove('show'); restoreGameViews(); document.querySelector('[data-view="settings"]').click(); });
 document.addEventListener('click', (event) => { if (!event.target.closest('.menu-wrap')) { const menu = $('#optionsMenu'); if (menu.classList.contains('show')) { menu.classList.remove('show'); restoreGameViews(); } } });
 $('#exportHistoryButton').addEventListener('click', async () => { const result = await window.darkGridAPI.exportHuntHistory(); $('#historyExportStatus').textContent = result?.ok ? `Histórico exportado: ${result.filePath}` : result?.canceled ? '' : 'Não foi possível exportar o histórico'; });
@@ -341,7 +410,12 @@ $('#huntModal').addEventListener('click', (event) => { if (event.target.id === '
 $('#tierlistButton').addEventListener('click', () => openTierlist());
 $('#tierlistClose').addEventListener('click', closeTierlist);
 $('#tierlistModal').addEventListener('click', (event) => { if (event.target.id === 'tierlistModal') closeTierlist(); });
-$('#analyzerButton').addEventListener('click', () => openAnalyzer());
+$('#analyzerButton').addEventListener('click', toggleStatsSidebar);
+$('#statsSidebarClose').addEventListener('click', toggleStatsSidebar);
+$('#trainersClose').addEventListener('click', closeTrainers);
+$('#trainersCancel').addEventListener('click', closeTrainers);
+$('#trainersModal').addEventListener('click', (event) => { if (event.target.id === 'trainersModal') closeTrainers(); });
+$('#trainersSave').addEventListener('click', async () => { const button = $('#trainersSave'); button.disabled = true; try { await saveTrainers(); } catch (cause) { $('#trainersStatus').textContent = `Não foi possível salvar: ${cause.message}`; } finally { button.disabled = false; } });
 $('#analyzerClose').addEventListener('click', closeAnalyzer);
 $('#analyzerModal').addEventListener('click', (event) => { if (event.target.id === 'analyzerModal') closeAnalyzer(); });
 $('#ivForm').addEventListener('submit', async (event) => {

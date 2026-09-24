@@ -20,7 +20,7 @@
     <button class="iv-button classic-button" id="ivTopButton" title="Calculadora de IV">◉ IV's</button>
     <div class="menu-wrap"><button class="ghost-button classic-button" id="optionsButton" title="Abrir opções">☰ Opções</button>
       <div class="classic-menu" id="optionsMenu">
-        <button class="menu-action" id="huntMenuButton">🎯 Hunt</button><button class="menu-action" id="scriptsButton">🧩 Scripts</button><button class="menu-action" id="operationsMenuButton">⚙ Operações</button><button class="menu-action" id="inventoryMenuButton">🎒 Inventário</button><button class="menu-action" id="teamMenuButton">👥 Equipe</button><button class="menu-action" id="settingsMenuButton">🔔 Alertas</button><button class="menu-action" id="logoutButton" hidden>⇥ Sair</button>
+        <button class="menu-action" id="huntMenuButton">🎯 Hunt</button><button class="menu-action" id="scriptsButton">🧩 Scripts</button><button class="menu-action" id="operationsMenuButton">⚙ Operações</button><button class="menu-action" id="inventoryMenuButton">🎒 Inventário</button><button class="menu-action" id="teamMenuButton">👥 Equipe</button><button class="menu-action" id="panelsMenuButton">▦ Painéis</button><button class="menu-action" id="gridMenuButton">▦ Layout: Grade</button><button class="menu-action" id="settingsMenuButton">🔔 Alertas</button><button class="menu-action" id="logoutButton" hidden>⇥ Sair</button>
       </div>
     </div>
     <span class="license-badge" id="licenseLabel">Licença não verificada</span>
@@ -63,6 +63,15 @@
       </form>
     </section>
   </div>
+  <div class="modal-backdrop" id="trainersModal" hidden>
+    <section class="auth-modal trainers-modal" role="dialog" aria-modal="true" aria-labelledby="trainersTitle">
+      <button class="modal-close" id="trainersClose" aria-label="Fechar">×</button>
+      <p class="eyebrow">TREINADORES SALVOS</p><h2 id="trainersTitle">Treinadores salvos</h2>
+      <p class="modal-copy">Nomes, usuários e senhas ficam criptografados neste computador e são usados apenas para preencher as janelas do jogo.</p>
+      <div id="trainersList" class="trainers-list"></div><p class="form-error" id="trainersStatus" role="alert"></p>
+      <div class="modal-actions"><button class="ghost-button" id="trainersCancel" type="button">Cancelar</button><button class="primary-button" id="trainersSave" type="button">Salvar</button></div>
+    </section>
+  </div>
   <div class="modal-backdrop" id="operationsModal" hidden>
     <section class="auth-modal operations-modal" role="dialog" aria-modal="true" aria-labelledby="operationsTitle">
       <button class="modal-close" id="operationsClose" aria-label="Fechar">×</button>
@@ -72,7 +81,7 @@
       <div class="operation-section">
         <h3>Comprar Pokébolas</h3>
         <form id="buyBallsForm" class="operation-form">
-          <label>ID da Pokébola<input id="ballId" type="number" min="1" step="1" value="1" required></label>
+          <label>Pokébola<select id="ballId" required><option value="1">Pokébola</option></select></label>
           <label>Quantidade<input id="ballQuantity" type="number" min="1" step="1" value="10" required></label>
           <button class="primary-button full-width" type="submit">Comprar</button>
         </form>
@@ -94,6 +103,11 @@
       <p class="form-error" id="operationsError" role="alert"></p>
     </section>
   </div>
+  <aside class="stats-sidebar" id="statsSidebar" hidden>
+    <button class="modal-close" id="statsSidebarClose" aria-label="Fechar painel">×</button>
+    <p class="eyebrow">PAINEL LATERAL</p><h2>Resumo da equipe</h2>
+    <div id="statsSidebarContent"><p class="history-empty">Selecione uma conta para ver os dados.</p></div>
+  </aside>
   <div class="modal-backdrop" id="inventoryModal" hidden>
     <section class="auth-modal inventory-modal" role="dialog" aria-modal="true" aria-labelledby="inventoryTitle">
       <button class="modal-close" id="inventoryClose" aria-label="Fechar">×</button>
