@@ -28,3 +28,47 @@ nav { display:grid; gap:5px; }.nav-item { padding:12px 13px; border-radius:9px; 
 .analyzer-modal { width:min(620px,calc(100vw - 40px)); max-height:calc(100vh - 48px); overflow:auto; }.analyzer-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:18px 0; }.analyzer-kpi { padding:12px; border:1px solid var(--line); border-radius:9px; background:#0b111a; }.analyzer-kpi span,.analyzer-kpi small { display:block; color:var(--muted); font-size:11px; }.analyzer-kpi strong { display:block; margin-top:5px; color:var(--accent-2); font-size:18px; }
 .iv-modal { width:min(700px,calc(100vw - 40px)); max-height:calc(100vh - 48px); overflow:auto; }.iv-form { display:grid; gap:12px; }.iv-form label { display:grid; gap:6px; color:var(--muted); font-size:12px; }.iv-form input,.iv-form select { border:1px solid var(--line); border-radius:8px; background:#0a1019; color:var(--text); padding:9px; }.iv-form-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }.iv-six { grid-template-columns:repeat(6,1fr); }.iv-modal .eyebrow { margin-bottom:0; }
 .scripts-modal { width:min(700px,calc(100vw - 40px)); }.scripts-form { display:grid; gap:12px; }.scripts-form label { display:grid; gap:7px; color:var(--muted); font-size:12px; }.scripts-form select,.scripts-form textarea { border:1px solid var(--line); border-radius:8px; background:#0a1019; color:var(--text); padding:10px; font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace; }.scripts-form select { font-family:inherit; }
+
+/* Shell clássico do DarkGrid: barra compacta, painéis densos e atalhos visíveis. */
+body { min-width:1100px; background:#0d1117; font-family:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif; }
+.classic-topbar { min-height:52px; display:flex; align-items:center; gap:7px; padding:7px 12px; background:#161b22; border-bottom:1px solid #21262d; position:sticky; top:0; z-index:10; }
+.classic-brand { display:flex; align-items:center; gap:8px; margin-right:auto; color:#e6edf3; font-size:14px; font-weight:800; letter-spacing:2px; white-space:nowrap; }
+.classic-brand small { color:#6e7681; font-size:10px; font-weight:400; letter-spacing:0; }
+.classic-button { padding:6px 9px; border-radius:6px; font-size:11px; white-space:nowrap; }
+.iv-button { display:inline-flex; align-items:center; gap:5px; padding:6px 11px; border:1px solid #733016; border-radius:999px; background:linear-gradient(135deg,#b83b18,#7f1d12); color:#fff; font-weight:700; cursor:pointer; }
+.iv-button:hover { filter:brightness(1.18); }
+.license-badge { padding:5px 9px; font-size:10px; }
+.classic-connection { display:inline-flex; align-items:center; gap:5px; color:#8b949e; font-size:10px; white-space:nowrap; }
+.classic-connection .status-dot { margin:0; }
+.menu-wrap { position:relative; }
+.classic-menu { display:none; position:absolute; right:0; top:calc(100% + 7px); min-width:190px; padding:6px; background:#161b22; border:1px solid #30363d; border-radius:8px; box-shadow:0 12px 30px rgba(0,0,0,.5); z-index:30; }
+.classic-menu.show { display:grid; gap:3px; }
+.menu-action { border:0; background:transparent; color:#c9d1d9; padding:7px 9px; text-align:left; border-radius:5px; font-size:11px; cursor:pointer; }
+.menu-action:hover { background:#21262d; color:#fff; }
+.classic-workspace { width:100%; max-width:none; margin:0; padding:8px; }
+.classic-summary { display:grid; grid-template-columns:repeat(3,max-content) 1fr 1fr 1fr; align-items:center; gap:8px; padding:7px 10px; margin-bottom:7px; background:#11161d; border:1px solid #21262d; border-radius:7px; color:#8b949e; font-size:11px; }
+.classic-summary span { padding-right:10px; border-right:1px solid #30363d; }
+.classic-summary b { color:#e6edf3; font-size:13px; }
+.classic-summary span:nth-child(2) { color:#3fb950; }.classic-summary span:nth-child(3) { color:#79c0ff; }
+.classic-summary small { color:#6e7681; font-size:10px; }
+.classic-heading { display:flex; align-items:center; justify-content:space-between; padding:3px 3px 7px; }
+.classic-heading h1 { margin:0; font-size:17px; letter-spacing:.2px; }
+.classic-tabs { display:flex; gap:4px; }
+.classic-tabs .nav-item { padding:6px 9px; border:1px solid #30363d; border-radius:6px; background:#161b22; color:#8b949e; font-size:11px; }
+.classic-tabs .nav-item.active,.classic-tabs .nav-item:hover { color:#fff; border-color:#596579; background:#21262d; }
+.classic-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+.classic-panel { min-height:190px; display:grid; grid-template-columns:1fr auto; align-content:start; gap:7px 10px; padding:0; overflow:hidden; border:1px solid #30363d; border-radius:7px; background:#161b22; }
+.classic-panel .account-name { padding:8px 10px 4px; align-items:center; }
+.classic-panel .account-avatar { width:27px; height:27px; border-radius:50%; background:#21262d; color:#79c0ff; font-size:12px; }
+.classic-panel .account-name strong { font-size:12px; }.classic-panel .account-name small { font-size:10px; }
+.classic-panel .account-actions { padding:8px 9px 0; gap:4px; }
+.classic-panel .account-status { font-size:10px; }
+.classic-panel .account-action-bar { display:flex; flex-wrap:wrap; gap:4px; grid-column:1/-1; margin:0; padding:6px 8px 8px; border-top:1px solid #21262d; background:#11161d; }
+.classic-panel .panel-action { padding:4px 7px; border-radius:5px; font-size:10px; }
+.classic-panel .account-stats { grid-column:1/-1; padding:0 10px; margin:0; font-size:10px; }
+.classic-panel:has(.account-status) { box-shadow:inset 0 2px 0 rgba(121,192,255,.25); }
+.empty-state { margin-top:7px; padding:34px 20px; border-color:#30363d; border-radius:7px; background:#11161d; }
+.history-section { margin-top:18px; }.history-section .section-heading { margin:0 0 7px; }.history-row { padding:9px 11px; border-radius:6px; background:#161b22; border-color:#30363d; font-size:11px; }
+.settings-panel { margin-top:18px; border-radius:7px; background:#161b22; }
+body.compact-mode .classic-workspace { max-width:1200px; margin:auto; } body.compact-mode .classic-panel { min-height:120px; }
+@media (max-width:1450px) { .classic-topbar { gap:4px; } .classic-button { padding-inline:6px; } .classic-summary { grid-template-columns:repeat(3,max-content) 1fr 1fr 1fr; } }

@@ -10,6 +10,7 @@ let teamAccount = null;
 let huntAccount = null;
 const $ = (selector) => document.querySelector(selector);
 const statusLabels = { loading: 'Carregando jogo', login_required: 'Login necessário', online: 'Online', stale: 'Sem atividade recente', offline: 'Offline', error: 'Erro no painel', opened: 'Painel aberto', closed: 'Painel oculto' };
+const actionIcons = { gameLogin: '▶', hunt: '🎯', openMarket: '🛒', openDepot: '🗄', team: '👥', iv: '◉', scripts: '🧩', inventory: '🎒', operations: '⚙', returnToLastHunt: '↩', refresh: '⟳' };
 
 function render() {
   const grid = $('#accountsGrid');
@@ -28,7 +29,7 @@ function render() {
   $('#performanceValue').textContent = metrics.xph ? `${metrics.xph.toLocaleString('pt-BR')} XP/h` : 'Eco';
   $('#performanceSummary').textContent = metrics.kills ? `${metrics.kills.toLocaleString('pt-BR')} kills · ${metrics.captures} capturas · ${metrics.shiny} shiny` : 'painel leve ativado';
   grid.replaceChildren(...state.accounts.map((account, index) => {
-    const card = document.createElement('article'); card.className = 'account-card';
+    const card = document.createElement('article'); card.className = 'account-card classic-panel';
     const name = document.createElement('div'); name.className = 'account-name';
     const avatar = document.createElement('span'); avatar.className = 'account-avatar'; avatar.textContent = String(index + 1);
     const details = document.createElement('div'); const title = document.createElement('strong'); title.textContent = account.name || `Conta ${index + 1}`;
@@ -37,11 +38,11 @@ function render() {
     details.append(title, hunt, stats); name.append(avatar, details);
     const actions = document.createElement('div'); actions.className = 'account-actions';
     const status = document.createElement('span'); status.className = 'account-status'; status.textContent = statusLabels[account.status] || account.status || 'Desconectada';
-    const open = document.createElement('button'); open.className = 'mini-button'; open.textContent = 'Abrir'; open.addEventListener('click', () => openAccount(account));
-    const remove = document.createElement('button'); remove.className = 'mini-button danger-button'; remove.textContent = 'Remover'; remove.disabled = Boolean(account.actionBusy); remove.addEventListener('click', () => removeAccount(account));
+    const open = document.createElement('button'); open.className = 'mini-button'; open.textContent = '⛶ Abrir'; open.title = 'Abrir painel'; open.addEventListener('click', () => openAccount(account));
+    const remove = document.createElement('button'); remove.className = 'mini-button danger-button'; remove.textContent = '✕ Remover'; remove.title = 'Remover painel'; remove.disabled = Boolean(account.actionBusy); remove.addEventListener('click', () => removeAccount(account));
     const actionBar = document.createElement('div'); actionBar.className = 'account-action-bar';
     for (const [label, action] of [['Login', 'gameLogin'], ['Hunt', 'hunt'], ['Market', 'openMarket'], ['Depot', 'openDepot'], ['Equipe', 'team'], ['IV', 'iv'], ['Scripts', 'scripts'], ['Inventário', 'inventory'], ['Operações', 'operations'], ['Retornar', 'returnToLastHunt'], ['Atualizar', 'refresh']]) {
-      const button = document.createElement('button'); button.className = 'mini-button'; button.textContent = label; button.disabled = Boolean(account.actionBusy);
+      const button = document.createElement('button'); button.className = 'mini-button panel-action'; button.textContent = `${actionIcons[action] || '•'} ${label}`; button.title = label; button.disabled = Boolean(account.actionBusy);
       button.addEventListener('click', () => action === 'refresh' ? refreshAccount(account) : action === 'gameLogin' ? openGameLogin(account) : action === 'inventory' ? openInventory(account) : action === 'team' ? openTeam(account) : action === 'iv' ? openIv(account) : action === 'scripts' ? openScripts(account) : action === 'hunt' ? openHunt(account) : action === 'operations' ? openOperations(account) : runAccountAction(account, action, action === 'returnToLastHunt' ? { slug: account.huntSlug, name: account.hunt } : {})); actionBar.append(button);
     }
     actions.append(status, open, remove); card.append(name, actions, actionBar); return card;
@@ -244,6 +245,17 @@ $('#manageAccountsButton').addEventListener('click', addAccount);
 $('#refreshButton').addEventListener('click', render);
 $('#compactButton').addEventListener('click', () => setCompactMode(!compactMode));
 $('#layoutButton').addEventListener('click', cycleLayout);
+const focusedAccount = () => state.accounts.find((account) => account.status === 'online' || account.status === 'stale') || state.accounts[0];
+const openFocused = (handler) => { const account = focusedAccount(); if (account) handler(account); else $('#connectionLabel').textContent = 'Adicione uma conta primeiro'; };
+$('#ivTopButton').addEventListener('click', () => openFocused(openIv));
+$('#protectItemsButton').addEventListener('click', () => openFocused(openOperations));
+$('#optionsButton').addEventListener('click', () => $('#optionsMenu').classList.toggle('show'));
+$('#huntMenuButton').addEventListener('click', () => { $('#optionsMenu').classList.remove('show'); openFocused(openHunt); });
+$('#scriptsButton').addEventListener('click', () => { $('#optionsMenu').classList.remove('show'); openFocused(openScripts); });
+$('#operationsMenuButton').addEventListener('click', () => { $('#optionsMenu').classList.remove('show'); openFocused(openOperations); });
+$('#inventoryMenuButton').addEventListener('click', () => { $('#optionsMenu').classList.remove('show'); openFocused(openInventory); });
+$('#teamMenuButton').addEventListener('click', () => { $('#optionsMenu').classList.remove('show'); openFocused(openTeam); });
+$('#settingsMenuButton').addEventListener('click', () => { $('#optionsMenu').classList.remove('show'); document.querySelector('[data-view="settings"]').click(); });
 $('#exportHistoryButton').addEventListener('click', async () => { const result = await window.darkGridAPI.exportHuntHistory(); $('#historyExportStatus').textContent = result?.ok ? `Histórico exportado: ${result.filePath}` : result?.canceled ? '' : 'Não foi possível exportar o histórico'; });
 $('#logoutButton').addEventListener('click', async () => {
   const result = await window.darkGridAPI.authLogout();
