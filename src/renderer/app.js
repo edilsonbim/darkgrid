@@ -51,11 +51,11 @@ function gameIcon(value, alt = '') {
 function setGameViewsVisible(visible) { return window.darkGridAPI.setAccountsVisible(Boolean(visible) && !compactMode); }
 function showUiOverlay() { setGameViewsVisible(false); }
 function restoreGameViews() { setGameViewsVisible(true); }
-async function buy1000Balls(account, button) {
+async function buy1000Balls(account, button, ballId = 1) {
   if (!account || account.actionBusy) return;
   account.actionBusy = true; button.disabled = true; button.textContent = '…'; render();
   try {
-    const response = await window.darkGridAPI.accountAction(account.id, 'buyBalls', { ballId: 1, quantity: 1000 });
+    const response = await window.darkGridAPI.accountAction(account.id, 'buyBalls', { ballId, quantity: 1000 });
     if (!response?.ok || !response.result?.ok) throw new Error(response?.reason || response?.result?.reason || 'purchase_failed');
     await refreshAccount(account);
   } catch (cause) { account.error = cause.message; account.status = cause.message === 'game_auth_required' ? 'login_required' : 'error'; }
@@ -145,8 +145,35 @@ function renderSimpleDashboard() {
   $('#simpleKpis').replaceChildren(...kpis.map(([label, value, tone]) => { const item = document.createElement('div'); item.className = `simple-kpi ${tone}`; const strong = document.createElement('strong'); strong.textContent = value; const small = document.createElement('small'); small.textContent = label; item.append(strong, small); return item; }));
   const today = $('#simpleToday'); today.replaceChildren(...[['GOLD', total.gold], ['XP', total.xp], ['KILLS', total.kills], ['CAPTURAS', total.captures], ['SHINY ENC/CAP', `${total.shiny} / 0`]].map(([label, value]) => { const item = document.createElement('div'); item.className = 'simple-today-card'; const strong = document.createElement('strong'); strong.textContent = typeof value === 'number' ? value.toLocaleString('pt-BR') : value; const small = document.createElement('small'); small.textContent = label; item.append(strong, small); return item; }));
   $('#simpleAccounts').replaceChildren(...accounts.map((account) => { const row = document.createElement('tr'); row.addEventListener('click', () => openAccount(account)); const name = document.createElement('td'); name.textContent = account.name || account.label || 'Conta'; const pokemon = document.createElement('td'); pokemon.textContent = account.team?.[0]?.name || '—'; pokemon.addEventListener('mouseenter', (event) => showIvHover(account, event)); pokemon.addEventListener('mousemove', (event) => positionIvHover(event)); pokemon.addEventListener('mouseleave', hideIvHover); const hunt = document.createElement('td'); hunt.textContent = account.hunt || 'Sem hunt'; const metrics = account.metrics || {}; for (const value of [metrics.gph, metrics.xph, metrics.kph, metrics.captures]) { const cell = document.createElement('td'); cell.textContent = Number(value || 0).toLocaleString('pt-BR'); row.append(cell); } const status = document.createElement('td'); status.textContent = statusLabels[account.status] || account.status || 'Aguardando'; row.prepend(name, pokemon, hunt); row.append(status); return row; }));
-  const itemCount = (account, terms) => (account.inventory || []).filter((item) => terms.some((term) => String(item.name || '').toLowerCase().includes(term))).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
-  $('#simpleItems').replaceChildren(...accounts.map((account) => { const row = document.createElement('tr'); const name = document.createElement('td'); name.textContent = account.name || account.label || 'Conta'; row.append(name); for (const terms of [['pokébola', 'pokeball', 'pokebola'], ['great'], ['ultra'], ['potion', 'poção'], ['revive', 'reviver']]) { const cell = document.createElement('td'); cell.textContent = itemCount(account, terms).toLocaleString('pt-BR'); row.append(cell); } const action = document.createElement('td'); const buy = document.createElement('button'); buy.className = 'simple-buy'; buy.textContent = '+1000'; buy.addEventListener('click', () => buy1000Balls(account, buy)); action.append(buy); row.append(action); return row; }));
+  const normalizeSupply = (value) => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const supplies = [
+    { key: 'poke', label: 'POKÉ BALL', aliases: ['poke ball', 'pokeball', 'pokebola'], ball: true },
+    { key: 'great', label: 'GREAT BALL', aliases: ['great ball'], ball: true },
+    { key: 'super', label: 'SUPER BALL', aliases: ['super ball'], ball: true },
+    { key: 'ultra', label: 'ULTRA BALL', aliases: ['ultra ball'], ball: true },
+    { key: 'idle', label: 'IDLE BALL', aliases: ['idle ball'], ball: true },
+    { key: 'golden', label: 'GOLDEN IDLE BALL', aliases: ['golden idle ball'], ball: true },
+    { key: 'hyper', label: 'HYPER POTION', aliases: ['hyper potion'] },
+    { key: 'ultimate', label: 'ULTIMATE POTION', aliases: ['ultimate potion'] },
+    { key: 'revive', label: 'REVIVE', aliases: ['revive'] },
+    { key: 'maxRevive', label: 'MAX REVIVE', aliases: ['max revive'] }
+  ];
+  const findSupply = (account, supply) => {
+    const aliases = supply.aliases.map(normalizeSupply);
+    if (supply.ball) {
+      const catalog = Array.isArray(account.ballCatalog) ? account.ballCatalog : [];
+      const item = catalog.find((entry) => aliases.some((alias) => normalizeSupply(entry.name) === alias || normalizeSupply(entry.name).includes(alias)));
+      return { item, quantity: item ? (account.ballMap?.[item.id] ?? 0) : 0 };
+    }
+    const item = (account.inventory || []).find((entry) => aliases.some((alias) => normalizeSupply(entry.name) === alias || normalizeSupply(entry.name).includes(alias)));
+    return { item, quantity: item?.quantity || 0 };
+  };
+  const head = $('#simpleItemsHead');
+  head.replaceChildren(Object.assign(document.createElement('tr'), { innerHTML: '<th>PERSONAGEM</th>' + supplies.map((supply) => `<th>${supply.label}<small class="simple-supply-price" data-price="${supply.key}"></small></th>`).join('') }));
+  const totals = Object.fromEntries(supplies.map((supply) => [supply.key, 0]));
+  $('#simpleItems').replaceChildren(...accounts.map((account) => { const row = document.createElement('tr'); const name = document.createElement('td'); name.className = 'simple-account-cell'; name.textContent = `${account.name || account.label || 'Conta'} · ${Number(account.gold || 0).toLocaleString('pt-BR')}g`; row.append(name); supplies.forEach((supply) => { const found = findSupply(account, supply); const cell = document.createElement('td'); cell.className = 'simple-supply-cell'; const icon = gameIcon(found.item?.icon, supply.label); if (icon) cell.append(icon); const count = document.createElement('span'); count.textContent = typeof found.quantity === 'string' ? found.quantity : Number(found.quantity || 0).toLocaleString('pt-BR'); cell.append(count); totals[supply.key] += typeof found.quantity === 'number' ? found.quantity : 0; if (supply.ball && found.item?.id) { const buy = document.createElement('button'); buy.className = 'simple-buy'; buy.textContent = '+1000'; buy.title = `Comprar 1000 ${supply.label}`; buy.addEventListener('click', (event) => { event.stopPropagation(); buy1000Balls(account, buy, found.item.id); }); cell.append(buy); } row.append(cell); }); row.addEventListener('click', () => openAccount(account)); return row; }));
+  supplies.forEach((supply) => { const prices = accounts.map((account) => findSupply(account, supply).item?.price || 0).filter(Boolean); const price = prices[0]; const target = document.querySelector(`[data-price="${supply.key}"]`); if (target) target.textContent = price ? ` · $${Number(price).toLocaleString('pt-BR')}` : ''; });
+  const foot = document.createElement('tr'); const footName = document.createElement('td'); footName.textContent = 'Total'; foot.append(footName); supplies.forEach((supply) => { const cell = document.createElement('td'); cell.textContent = Number(totals[supply.key] || 0).toLocaleString('pt-BR'); foot.append(cell); }); $('#simpleItemsFoot').replaceChildren(foot);
   $('#simpleTeams').replaceChildren(...accounts.flatMap((account) => (account.team || []).slice(0, 6).map((pokemon) => { const card = document.createElement('article'); card.className = 'simple-team-card'; card.addEventListener('mouseenter', (event) => showIvHover({ ...account, team: [pokemon] }, event)); card.addEventListener('mousemove', positionIvHover); card.addEventListener('mouseleave', hideIvHover); const name = document.createElement('strong'); name.textContent = `${account.name || 'Conta'} · ${pokemon.name || 'Pokémon'}`; const meta = document.createElement('small'); meta.textContent = `Nv. ${pokemon.level || 0} · IV ${pokemon.ivTotal || 0}/192 · Q ${Number(pokemon.quality || 0).toFixed(2)}`; card.append(name, meta); return card; })));
 }
 
@@ -361,7 +388,7 @@ async function runAccountAction(account, action, input = {}) {
 }
 function applySnapshot(account, snapshot) {
   if (!snapshot) return;
-  account.status = snapshot.status; account.name = snapshot.name || account.name; account.hunt = snapshot.hunt?.name || snapshot.hunt?.slug || 'Sem hunt'; account.huntSlug = snapshot.hunt?.slug || account.huntSlug || ''; account.level = snapshot.level; account.gold = snapshot.gold; account.balls = snapshot.balls; account.potions = snapshot.potions; account.ballCatalog = Array.isArray(snapshot.ballCatalog) ? snapshot.ballCatalog : account.ballCatalog || []; account.inventory = Array.isArray(snapshot.inventory) ? snapshot.inventory : account.inventory || []; account.team = Array.isArray(snapshot.team) ? snapshot.team : account.team || []; account.metrics = snapshot.metrics || account.metrics || {}; account.analyzer = snapshot.analyzer || account.analyzer || null; account.drops = snapshot.drops || account.drops || [];
+  account.status = snapshot.status; account.name = snapshot.name || account.name; account.hunt = snapshot.hunt?.name || snapshot.hunt?.slug || 'Sem hunt'; account.huntSlug = snapshot.hunt?.slug || account.huntSlug || ''; account.level = snapshot.level; account.gold = snapshot.gold; account.balls = snapshot.balls; account.potions = snapshot.potions; account.ballCatalog = Array.isArray(snapshot.ballCatalog) ? snapshot.ballCatalog : account.ballCatalog || []; account.ballMap = snapshot.ballMap && typeof snapshot.ballMap === 'object' ? snapshot.ballMap : account.ballMap || {}; account.invMap = snapshot.invMap && typeof snapshot.invMap === 'object' ? snapshot.invMap : account.invMap || {}; account.inventory = Array.isArray(snapshot.inventory) ? snapshot.inventory : account.inventory || []; account.team = Array.isArray(snapshot.team) ? snapshot.team : account.team || []; account.metrics = snapshot.metrics || account.metrics || {}; account.analyzer = snapshot.analyzer || account.analyzer || null; account.drops = snapshot.drops || account.drops || [];
 }
 function syncLayout() { const x = sidebarOpen ? 340 : 0; const reserved = ivPopupOpen ? 580 : 0; window.darkGridAPI.setAccountLayout({ x, y: PANEL_GAME_Y, width: Math.max(500, window.innerWidth - x - reserved), height: Math.max(400, window.innerHeight - PANEL_GAME_Y) }); positionPanelHeaders(); }
 async function changePanelZoom(account, delta) { const current = Number(panelZooms[account.id] || 1); const next = Math.min(1.5, Math.max(0.5, Math.round((current + delta) * 20) / 20)); panelZooms[account.id] = next; localStorage.setItem('darkgrid-panel-zooms', JSON.stringify(panelZooms)); await window.darkGridAPI.setAccountZoom(account.id, next); render(); }

@@ -1,7 +1,7 @@
 'use strict';
 
 const { EventEmitter } = require('node:events');
-const { BOOTSTRAP_SCRIPT, READ_STATE_SCRIPT, OPEN_MARKET_SCRIPT, OPEN_DEPOT_SCRIPT } = require('./page-scripts');
+const { BOOTSTRAP_SCRIPT, READ_STATE_SCRIPT, READ_ITEMS_SCRIPT, OPEN_MARKET_SCRIPT, OPEN_DEPOT_SCRIPT } = require('./page-scripts');
 const { travelScript } = require('./travel-script');
 const { returnHuntScript } = require('./return-hunt-script');
 const { GO_TOWN_SCRIPT } = require('./town-script');
@@ -31,7 +31,7 @@ class GameAdapter extends EventEmitter {
   }
 
   bootstrap() { return this.#run(() => this.#execute(BOOTSTRAP_SCRIPT)).then((result) => { if (!result?.ok) throw error('BOOTSTRAP_FAILED', 'Coletor do jogo não foi inicializado'); this.bootstrapped = true; return result; }); }
-  getState() { return this.#run(async () => { if (!this.bootstrapped) await this.#execute(BOOTSTRAP_SCRIPT); const raw = await this.#execute(READ_STATE_SCRIPT); return this.#normalizeState(raw); }); }
+  getState() { return this.#run(async () => { if (!this.bootstrapped) await this.#execute(BOOTSTRAP_SCRIPT); const raw = await this.#execute(READ_STATE_SCRIPT); const items = await this.#execute(READ_ITEMS_SCRIPT).catch(() => ({})); return this.#normalizeState({ ...raw, ...items }); }); }
   openMarket() { return this.#action(OPEN_MARKET_SCRIPT); }
   openDepot() { return this.#action(OPEN_DEPOT_SCRIPT); }
   readDepot() { return this.#action(READ_DEPOT_SCRIPT); }
@@ -87,7 +87,10 @@ class GameAdapter extends EventEmitter {
     const team = Array.isArray(raw.team) ? raw.team.slice(0, 6).map((pokemon) => ({ id: String(pokemon?.id || '').slice(0, 64), name: String(pokemon?.name || 'Pokémon').slice(0, 60), level: Math.max(0, n(pokemon?.level)), hp: Math.max(0, n(pokemon?.hp)), maxHp: Math.max(0, n(pokemon?.maxHp)), ivTotal: Math.max(0, n(pokemon?.ivTotal)), quality: Math.max(0, n(pokemon?.quality)), shiny: Boolean(pokemon?.shiny), leader: Boolean(pokemon?.leader), starter: Boolean(pokemon?.starter), locked: Boolean(pokemon?.locked) })).filter((pokemon) => pokemon.id) : [];
     const metrics = raw.metrics && typeof raw.metrics === 'object' ? { kills: Math.max(0, n(raw.metrics.kills)), xp: Math.max(0, n(raw.metrics.xp)), captures: Math.max(0, n(raw.metrics.captures)), shiny: Math.max(0, n(raw.metrics.shiny)), xph: Math.max(0, n(raw.metrics.xph)), kph: Math.max(0, n(raw.metrics.kph)), gph: n(raw.metrics.gph), balance: n(raw.metrics.balance), lootGold: Math.max(0, n(raw.metrics.lootGold)), capturesGold: Math.max(0, n(raw.metrics.capturesGold)), supplyGold: Math.max(0, n(raw.metrics.supplyGold)), ballsUsed: Math.max(0, n(raw.metrics.ballsUsed)), potionsUsed: Math.max(0, n(raw.metrics.potionsUsed)), seconds: Math.max(0, n(raw.metrics.seconds)), serverBacked: Boolean(raw.metrics.serverBacked) } : {};
     const analyzer = raw.analyzer && typeof raw.analyzer === 'object' ? { serverBacked: Boolean(raw.analyzer.serverBacked), seconds: Math.max(0, n(raw.analyzer.seconds)), kills: Math.max(0, n(raw.analyzer.kills)), captures: Math.max(0, n(raw.analyzer.captures)), shinyCaptures: Math.max(0, n(raw.analyzer.shinyCaptures)), xpGained: Math.max(0, n(raw.analyzer.xpGained)), lootGold: Math.max(0, n(raw.analyzer.lootGold)), capturesGold: Math.max(0, n(raw.analyzer.capturesGold)), supplyGold: Math.max(0, n(raw.analyzer.supplyGold)), ballsUsed: Math.max(0, n(raw.analyzer.ballsUsed)), potionsUsed: Math.max(0, n(raw.analyzer.potionsUsed)), balance: n(raw.analyzer.balance), drops: Array.isArray(raw.analyzer.drops) ? raw.analyzer.drops.slice(0, 60).map((item) => ({ name: String(item?.name || '').slice(0, 80), qty: Math.max(0, n(item?.qty)), gold: Math.max(0, n(item?.gold)) })).filter((item) => item.name) : [] } : null;
-    return { accountId: this.accountId, status: raw.status, hunt, level: n(raw.level), gold: n(raw.gold), balls: Math.max(0, n(raw.balls)), inventory, team, analyzer, metrics, drops: Array.isArray(raw.drops) ? raw.drops.slice(0, 100) : [], updatedAt: Date.now() };
+    const ballCatalog = Array.isArray(raw.ballCatalog) ? raw.ballCatalog.slice(0, 80).map((item) => ({ id: String(item?.id || '').slice(0, 32), name: String(item?.name || '').slice(0, 80), price: Math.max(0, n(item?.price)), icon: String(item?.icon || '').slice(0, 240) })).filter((item) => item.id) : [];
+    const ballMap = raw.ballMap && typeof raw.ballMap === 'object' ? Object.fromEntries(Object.entries(raw.ballMap).slice(0, 80).map(([id, quantity]) => [String(id).slice(0, 32), typeof quantity === 'string' ? quantity.slice(0, 20) : Math.max(0, n(quantity))])) : {};
+    const invMap = raw.invMap && typeof raw.invMap === 'object' ? Object.fromEntries(Object.entries(raw.invMap).slice(0, 300).map(([id, quantity]) => [String(id).slice(0, 32), Math.max(0, n(quantity))])) : {};
+    return { accountId: this.accountId, status: raw.status, hunt, level: n(raw.level), gold: n(raw.gold), balls: Math.max(0, n(raw.balls)), inventory, ballCatalog, ballMap, invMap, team, analyzer, metrics, drops: Array.isArray(raw.drops) ? raw.drops.slice(0, 100) : [], updatedAt: Date.now() };
   }
 }
 
