@@ -58,3 +58,14 @@ Ele imprime a URL, a chave pública e as credenciais de demonstração. Os dados
 - Cada conta terá uma sessão isolada.
 - A interface não deve substituir DOM focado durante operações assíncronas.
 - Userscripts são executados somente por ação explícita do usuário na origem oficial do jogo; o DarkGrid não baixa scripts automaticamente.
+# Migração do modo Simples
+
+O modo Simples do DarkGrid está sendo migrado a partir do comportamento do projeto PokeGrid-source, sob licença MIT. A migração preserva o aviso de copyright/licença do componente de referência e adapta as integrações ao `darkGridAPI`, ao isolamento por conta e ao armazenamento seguro do DarkGrid.
+
+Escopo da migração:
+
+- coletor de estado por conta e cache de leitura;
+- dashboard modular com seções configuráveis;
+- análise de IV em popup;
+- compras e venda protegida com seleção persistente;
+- atualização em lote sem interromper o farm.

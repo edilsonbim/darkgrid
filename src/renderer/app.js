@@ -11,6 +11,7 @@ let huntAccount = null;
 let sidebarOpen = false;
 let maximizedAccountId = null;
 let ivPopupOpen = false;
+const simpleSections = Object.assign({ kpis: true, today: true, table: true, items: true, team: true, hunts: false, catches: false, shinies: false, trend: false, chat: false }, (() => { try { return JSON.parse(localStorage.getItem('darkgrid-simple-sections') || '{}'); } catch { return {}; } })());
 let protectedItemIds = (() => { try { return new Set(JSON.parse(localStorage.getItem('darkgrid-protected-items') || '[]').map(String)); } catch { return new Set(); } })();
 let protectAccount = null;
 const panelZooms = Object.assign({}, (() => { try { return JSON.parse(localStorage.getItem('darkgrid-panel-zooms') || '{}'); } catch { return {}; } })());
@@ -136,6 +137,8 @@ function render() {
 }
 
 function renderSimpleDashboard() {
+  document.querySelectorAll('[data-simple-section]').forEach((input) => { input.checked = simpleSections[input.dataset.simpleSection] !== false; });
+  for (const section of ['kpis', 'today', 'table', 'items', 'team']) { const element = document.querySelector(`.simple-sec-${section}`); if (element) element.hidden = simpleSections[section] === false; }
   const accounts = state.accounts;
   const total = accounts.reduce((out, account) => { const metrics = account.metrics || {}; out.gold += Number(metrics.gph || 0); out.xp += Number(metrics.xph || 0); out.kills += Number(metrics.kph || 0); out.captures += Number(metrics.captures || 0); out.shiny += Number(metrics.shiny || 0); return out; }, { gold: 0, xp: 0, kills: 0, captures: 0, shiny: 0 });
   const kpis = [['+Gold/h líquido', total.gold.toLocaleString('pt-BR'), 'gold'], ['XP/h total', total.xp.toLocaleString('pt-BR'), 'blue'], ['Kills/h', total.kills.toLocaleString('pt-BR'), ''], ['Capturas (sessão)', total.captures.toLocaleString('pt-BR'), ''], ['Shiny enc/cap', `${total.shiny} / 0`, 'pink'], ['Contas ativas', `${accounts.filter((account) => account.status === 'online' || account.status === 'stale').length} / 4`, 'green']];
@@ -386,6 +389,8 @@ $('#emptyLoginButton').addEventListener('click', addAccount);
 $('#manageAccountsButton').addEventListener('click', openTrainers);
 $('#refreshButton').addEventListener('click', refreshAllAccounts);
 $('#compactButton').addEventListener('click', () => setCompactMode(!compactMode));
+$('#simpleConfigButton').addEventListener('click', () => { const panel = $('#simpleConfig'); panel.hidden = !panel.hidden; });
+document.querySelectorAll('[data-simple-section]').forEach((input) => input.addEventListener('change', () => { simpleSections[input.dataset.simpleSection] = input.checked; localStorage.setItem('darkgrid-simple-sections', JSON.stringify(simpleSections)); renderSimpleDashboard(); }));
 $('#layoutButton').addEventListener('click', cycleLayout);
 const focusedAccount = () => state.accounts.find((account) => account.status === 'online' || account.status === 'stale') || state.accounts[0];
 const openFocused = (handler) => { const account = focusedAccount(); if (account) handler(account); else $('#connectionLabel').textContent = 'Adicione uma conta primeiro'; };
