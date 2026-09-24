@@ -34,6 +34,8 @@
       <div class="simple-kpis" id="simpleKpis"></div>
       <div class="simple-section"><div class="simple-section-title">HOJE</div><div class="simple-today" id="simpleToday"></div></div>
       <div class="simple-section"><div class="simple-section-title">POR CONTA · CLIQUE NA LINHA PARA ABRIR O JOGO</div><div class="simple-table-wrap"><table class="simple-table"><thead><tr><th>CONTA</th><th>POKÉMON</th><th>HUNT</th><th>GOLD/H</th><th>XP/H</th><th>KILLS/H</th><th>CAPTURAS</th><th>STATUS</th></tr></thead><tbody id="simpleAccounts"></tbody></table></div></div>
+      <div class="simple-section"><div class="simple-section-title">POKÉBOLAS E CURAS POR PERSONAGEM · +1000</div><div class="simple-table-wrap"><table class="simple-table simple-items-table"><thead><tr><th>PERSONAGEM</th><th>POKÉBOLA</th><th>GREAT BALL</th><th>ULTRA BALL</th><th>POTIONS</th><th>REVIVES</th><th>AÇÕES</th></tr></thead><tbody id="simpleItems"></tbody></table></div></div>
+      <div class="simple-section"><div class="simple-section-title">TIMES & IV · PASSE O MOUSE SOBRE O POKÉMON PARA VER OS ATRIBUTOS</div><div class="simple-team-grid" id="simpleTeams"></div></div>
     </section>
     <div class="iv-hover-card" id="ivHoverCard" hidden></div>
     <section class="empty-state" id="emptyState"><div class="empty-icon">＋</div><h2>Adicione um painel para começar</h2><p>Cada conta fica isolada, com os mesmos atalhos de operação no próprio painel.</p><button class="primary-button" id="emptyLoginButton">▶ Logar equipe</button></section>
@@ -146,7 +148,7 @@
       <div class="team-list" id="teamList"><p class="history-empty">Equipe ainda não carregada.</p></div>
     </section>
   </div>
-  <div class="modal-backdrop" id="ivModal" hidden>
+  <div class="modal-backdrop iv-modal-backdrop" id="ivModal" hidden>
     <section class="auth-modal iv-modal" role="dialog" aria-modal="true" aria-labelledby="ivTitle">
       <button class="modal-close" id="ivClose" aria-label="Fechar">×</button>
       <p class="eyebrow">ANÁLISE DE POKÉMON</p>
